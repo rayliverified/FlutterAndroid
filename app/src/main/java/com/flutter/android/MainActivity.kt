@@ -1,12 +1,16 @@
 package com.flutter.android
 
 import android.os.Bundle
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.Menu
 import android.view.MenuItem
 
 import kotlinx.android.synthetic.main.activity_main.*
+import io.flutter.facade.Flutter
+import android.widget.FrameLayout
+
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -16,8 +20,18 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         fab.setOnClickListener { view ->
-            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                    .setAction("Action", null).show()
+//            val tx = supportFragmentManager.beginTransaction()
+//            tx.replace(R.id.fragment_container, Flutter.createFragment("page_main"))
+//            tx.commit()
+            val flutterView = Flutter.createView(
+                    this@MainActivity,
+                    lifecycle,
+                    "page_main"
+            )
+            val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            addContentView(flutterView, layout)
+//            Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                    .setAction("Action", null).show()
         }
     }
 
