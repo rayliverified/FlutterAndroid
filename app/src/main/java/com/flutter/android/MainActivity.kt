@@ -9,9 +9,6 @@ import kotlinx.android.synthetic.main.activity_main.*
 import io.flutter.facade.Flutter
 import android.widget.FrameLayout
 
-
-
-
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
