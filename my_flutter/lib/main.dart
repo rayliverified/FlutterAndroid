@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_android/page/page_main.dart';
 import 'package:flutter_android/themes.dart';
+import 'package:flutter_android/utils.dart';
 
 void main() => runApp(_widgetForRoute(window.defaultRouteName));
 
@@ -35,11 +36,14 @@ class Transparent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
-      title: 'Flutter Transparent',
-      theme: transparentTheme,
-      home: Center(
-        child: Text('Transparent Scaffold Background'),
-      ),
+        title: 'Flutter Transparent',
+        theme: transparentTheme,
+        home: Scaffold(
+          body: Center(
+            child: Text('Transparent Scaffold Background'),
+          ),
+          backgroundColor: HexColor('#00FFFFFF'),
+        )
     );
   }
 }

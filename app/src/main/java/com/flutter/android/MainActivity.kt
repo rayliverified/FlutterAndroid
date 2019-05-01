@@ -35,12 +35,13 @@ class MainActivity : AppCompatActivity() {
 //            tx.replace(R.id.fragment_container, flutterFragment)
 //            tx.commit()
 //            val viewInflated = LayoutInflater.from(this).inflate(R.layout.layoutDialog, view as ViewGroup?, false)
-            if (flutterView.parent != null) {
-                (flutterView.parent as ViewGroup).removeView(flutterView)
-            }
-            val dialog = AlertDialog.Builder(this)
-                    .setView(flutterView)
-                    .show()
+
+//            if (flutterView.parent != null) {
+//                (flutterView.parent as ViewGroup).removeView(flutterView)
+//            }
+//            val dialog = AlertDialog.Builder(this)
+//                    .setView(flutterView)
+//                    .show()
 
 //            viewInflated.reset_password_done_button.setOnClickListener {
 //                dialog.dismiss()
@@ -53,8 +54,8 @@ class MainActivity : AppCompatActivity() {
 //            }
 //
 //            dialog.show()
-//             val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-//            addContentView(flutterView, layout)
+             val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+            addContentView(flutterView, layout)
         }
     }
 

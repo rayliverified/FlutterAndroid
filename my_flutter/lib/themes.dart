@@ -57,7 +57,6 @@ ThemeData _buildTransparentTheme() {
   ThemeData transparentTheme = ThemeData.light();
   transparentTheme.copyWith(
     platform: TargetPlatform.iOS,
-    scaffoldBackgroundColor: HexColor('#FF29B6F6'),
   );
   return transparentTheme;
 }
