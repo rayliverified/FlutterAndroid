@@ -10,9 +10,11 @@ Widget _widgetForRoute(String route) {
   switch (route) {
     case 'page_main':
       return MyApp();
+    case 'page_transparent':
+      return Transparent();
     default:
       return Center(
-        child: Text('Unknown route: $route', textDirection: TextDirection.ltr),
+        child: Text('Unknown route: $route'),
       );
   }
 }
@@ -25,6 +27,19 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: defaultTheme,
       home: new MainPage(),
+    );
+  }
+}
+
+class Transparent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return new MaterialApp(
+      title: 'Flutter Transparent',
+      theme: transparentTheme,
+      home: Center(
+        child: Text('Transparent Scaffold Background'),
+      ),
     );
   }
 }
