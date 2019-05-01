@@ -35,6 +35,8 @@ public class FlutterFragment extends Fragment {
 
   @Override
   public FlutterView onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
-    return Flutter.createView(getActivity(), getLifecycle(), mRoute);
+    FlutterView flutterView = Flutter.createView(getActivity(), getLifecycle(), mRoute);
+    flutterView.enableTransparentBackground();
+    return flutterView;
   }
 }
