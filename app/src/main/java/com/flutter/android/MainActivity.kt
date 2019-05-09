@@ -1,6 +1,7 @@
 package com.flutter.android
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.Menu
@@ -17,15 +18,18 @@ import io.flutter.view.FlutterView
 
 class MainActivity : AppCompatActivity() {
 
+    var switchRouteCounter = 0
+    var routeArray = arrayListOf("page_main", "page_transparent")
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
         val flutterView = Flutter.createView(
-                this@MainActivity,
-                lifecycle,
-                "page_transparent"
+            this@MainActivity,
+            lifecycle,
+            "page_main"
         )
         flutterView.enableTransparentBackground()
 
@@ -36,12 +40,21 @@ class MainActivity : AppCompatActivity() {
 //            tx.commit()
 //            val viewInflated = LayoutInflater.from(this).inflate(R.layout.layoutDialog, view as ViewGroup?, false)
 
-//            if (flutterView.parent != null) {
-//                (flutterView.parent as ViewGroup).removeView(flutterView)
-//            }
-//            val dialog = AlertDialog.Builder(this)
-//                    .setView(flutterView)
-//                    .show()
+            Log.d("Initial Route", routeArray[switchRouteCounter])
+            flutterView.setInitialRoute(routeArray[switchRouteCounter])
+            if (switchRouteCounter >= routeArray.size - 1) {
+                switchRouteCounter = 0
+            } else {
+                switchRouteCounter += 1
+            }
+
+            if (flutterView.parent != null) {
+                (flutterView.parent as ViewGroup).removeView(flutterView)
+            }
+
+            val dialog = AlertDialog.Builder(this)
+                    .setView(flutterView)
+                    .show()
 
 //            viewInflated.reset_password_done_button.setOnClickListener {
 //                dialog.dismiss()
@@ -54,8 +67,9 @@ class MainActivity : AppCompatActivity() {
 //            }
 //
 //            dialog.show()
-             val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
-            addContentView(flutterView, layout)
+
+//            val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+//            addContentView(flutterView, layout)
         }
     }
 
