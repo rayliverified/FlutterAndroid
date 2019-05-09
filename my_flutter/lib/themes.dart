@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'package:flutter_android/utils.dart';
+
 final ThemeData defaultTheme = _buildDefaultTheme();
 
 ThemeData _buildDefaultTheme() {
   final ThemeData base = ThemeData.light();
   return base.copyWith(
+    platform: TargetPlatform.iOS,
     textTheme: _buildDefaultTextTheme(base.textTheme),
     primaryTextTheme: _buildDefaultTextTheme(base.primaryTextTheme),
     accentTextTheme: _buildDefaultTextTheme(base.accentTextTheme),
@@ -46,4 +49,14 @@ TextTheme _buildDefaultTextTheme(TextTheme base) {
       fontSize: 16.0,
     ),
   );
+}
+
+final transparentTheme = _buildTransparentTheme();
+
+ThemeData _buildTransparentTheme() {
+  ThemeData transparentTheme = ThemeData.light();
+  transparentTheme.copyWith(
+    platform: TargetPlatform.iOS,
+  );
+  return transparentTheme;
 }
