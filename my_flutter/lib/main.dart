@@ -1,6 +1,6 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
 
+import 'package:flutter/material.dart';
 import 'package:flutter_android/page/page_main.dart';
 import 'package:flutter_android/themes.dart';
 import 'package:flutter_android/utils.dart';
@@ -15,7 +15,10 @@ Widget _widgetForRoute(String route) {
       return Transparent();
     default:
       return Center(
-        child: Text('Unknown route: $route'),
+        child: Text(
+          'Unknown route: $route',
+          textDirection: TextDirection.ltr,
+        ),
       );
   }
 }
@@ -43,7 +46,6 @@ class Transparent extends StatelessWidget {
             child: Text('Transparent Scaffold Background'),
           ),
           backgroundColor: HexColor('#00FFFFFF'),
-        )
-    );
+        ));
   }
 }
