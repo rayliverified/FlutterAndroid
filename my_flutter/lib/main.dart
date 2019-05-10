@@ -1,11 +1,40 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_android/bloc/BlocProvider.dart';
 import 'package:flutter_android/page/page_main.dart';
 import 'package:flutter_android/themes.dart';
 import 'package:flutter_android/utils.dart';
 
-void main() => runApp(_widgetForRoute(window.defaultRouteName));
+void main() => runApp(BlocProvider<AppBloc>(bloc: AppBloc(), child: App()));
+
+class AppBloc implements BlocBase {
+  String _page = window.defaultRouteName;
+
+  StreamController appController = StreamController();
+  Stream get getApp => appController.stream;
+
+  void updatePage(String page) {
+    _page = page;
+    appController.sink.add(_page);
+  }
+
+  void dispose() {
+    appController.close();
+  }
+}
+
+class App extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
+    return StreamBuilder(
+      stream: appBloc.getApp,
+      builder: (context, snapshot) => _widgetForRoute(snapshot.data),
+    );
+  }
+}
 
 Widget _widgetForRoute(String route) {
   switch (route) {

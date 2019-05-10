@@ -1,10 +1,11 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
-
+import 'package:flutter/material.dart';
+import 'package:flutter_android/bloc/BlocProvider.dart';
 import 'package:flutter_android/bottom_menu_items.dart';
 import 'package:flutter_android/icons.dart';
-import 'package:flutter_android/page/page_games.dart';
+import 'package:flutter_android/main.dart';
 import 'package:flutter_android/page/page_coming_soon.dart';
+import 'package:flutter_android/page/page_games.dart';
 
 class MainPage extends StatefulWidget {
   @override
@@ -16,6 +17,8 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
+
     return new Material(
       borderRadius: new BorderRadius.circular(8.0),
       child: new Scaffold(
@@ -38,7 +41,7 @@ class _MainPageState extends State<MainPage> {
           actions: <Widget>[
             new Center(
               child: new IconButton(
-                  onPressed: () => {},
+                  onPressed: () => {appBloc.updatePage("page_transparent")},
                   icon: new Stack(
                     children: <Widget>[
                       new Align(
