@@ -40,13 +40,13 @@ class MainActivity : AppCompatActivity() {
 //            tx.commit()
 //            val viewInflated = LayoutInflater.from(this).inflate(R.layout.layoutDialog, view as ViewGroup?, false)
 
-            Log.d("Initial Route", routeArray[switchRouteCounter])
-            flutterView.setInitialRoute(routeArray[switchRouteCounter])
-            if (switchRouteCounter >= routeArray.size - 1) {
-                switchRouteCounter = 0
-            } else {
-                switchRouteCounter += 1
-            }
+//            Log.d("Initial Route", routeArray[switchRouteCounter])
+//            flutterView.setInitialRoute(routeArray[switchRouteCounter])
+//            if (switchRouteCounter >= routeArray.size - 1) {
+//                switchRouteCounter = 0
+//            } else {
+//                switchRouteCounter += 1
+//            }
 
             if (flutterView.parent != null) {
                 (flutterView.parent as ViewGroup).removeView(flutterView)
