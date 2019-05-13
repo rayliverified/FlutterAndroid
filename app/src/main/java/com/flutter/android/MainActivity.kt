@@ -35,14 +35,13 @@ class MainActivity : AppCompatActivity() {
         flutterView.enableTransparentBackground()
 
         val channel = MethodChannel(flutterView, "app")
-
         // Receive method invocations from Dart and return results.
         channel.setMethodCallHandler { call, result ->
             when (call.method) {
                 "navigation" -> {
                     when (call.arguments) {
                         "back" -> {
-                            onBackPressed()
+                            //TODO Handle back navigation here.
                         }
                     }
                     result.success("Hello, ${call.arguments}")

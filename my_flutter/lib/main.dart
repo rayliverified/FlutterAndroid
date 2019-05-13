@@ -28,16 +28,6 @@ class AppBloc implements BlocBase {
   }
 
   void initPlatformChannels() async {
-//    // Invoke a platform method.
-//    const name = 'bar'; // or 'baz', or 'unknown'
-//    const value = 'world';
-//    try {
-//      print(await channel.invokeMethod(name, value));
-//    } on PlatformException catch (e) {
-//      print('$name failed: ${e.message}');
-//    } on MissingPluginException {
-//      print('$name not implemented');
-//    }
     // Receive method invocations from platform and return results.
     channel.setMethodCallHandler((MethodCall call) async {
       switch (call.method) {
@@ -52,10 +42,30 @@ class AppBloc implements BlocBase {
     });
   }
 
+  void navigate(Navigation navigation) {
+    switch (navigation) {
+      case Navigation.BACK:
+        navigateBack();
+        return;
+    }
+  }
+
+  void navigateBack() async {
+    try {
+      print(await channel.invokeMethod("navigation", "back"));
+    } on PlatformException catch (e) {
+      print('Failed: ${e.message}');
+    } on MissingPluginException {
+      print('Not implemented');
+    }
+  }
+
   void dispose() {
     appController.close();
   }
 }
+
+enum Navigation { BACK }
 
 class App extends StatelessWidget {
   @override
@@ -111,7 +121,7 @@ class Transparent extends StatelessWidget {
         home: Scaffold(
           body: Center(
               child: GestureDetector(
-                  onTap: () => appBloc.updatePage("page_main"),
+                  onTap: () => appBloc.navigate(Navigation.BACK),
                   child: Text('Transparent Scaffold Background'))),
           backgroundColor: HexColor('#00FFFFFF'),
         ));
