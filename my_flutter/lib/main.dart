@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -6,34 +5,25 @@ import 'package:flutter_android/bloc/BlocProvider.dart';
 import 'package:flutter_android/page/page_main.dart';
 import 'package:flutter_android/themes.dart';
 import 'package:flutter_android/utils.dart';
+import 'package:rxdart/rxdart.dart';
 
 void main() => runApp(BlocProvider<AppBloc>(bloc: AppBloc(), child: App()));
 
 class AppBloc implements BlocBase {
-  AppProvider appProvider = AppProvider();
+  String _page = window.defaultRouteName ?? "";
 
-  StreamController<String> appController = StreamController();
-  Stream get getPage => appController.stream;
+  BehaviorSubject<String> appController = BehaviorSubject<String>();
+  ValueObservable get getPage => appController;
 
-  AppBloc() {
-    updatePage(appProvider._page);
-  }
+  AppBloc() {}
 
   void updatePage(String page) {
-    appProvider.updatePage(page);
-    appController.sink.add(appProvider._page);
+    _page = page;
+    appController.sink.add(_page);
   }
 
   void dispose() {
     appController.close();
-  }
-}
-
-class AppProvider {
-  String _page = window.defaultRouteName ?? "";
-
-  void updatePage(String page) {
-    _page = page;
   }
 }
 
@@ -43,7 +33,7 @@ class App extends StatelessWidget {
     final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
     return StreamBuilder(
         stream: appBloc.getPage,
-        initialData: appBloc.appProvider._page,
+        initialData: appBloc._page,
         builder: (context, snapshot) {
           print(snapshot.data);
           return _widgetForRoute(snapshot.data);
@@ -97,3 +87,33 @@ class Transparent extends StatelessWidget {
         ));
   }
 }
+
+//UNUSED: App Provider implementation.
+//class AppBloc implements BlocBase {
+//  AppProvider appProvider = AppProvider();
+//
+//  //UNUSED: Example using dart:async Streams.
+//  StreamController<String> appController = StreamController();
+//  Stream get getPage => appController.stream;
+//
+//  AppBloc() {
+//  }
+//
+//  void updatePage(String page) {
+//    appProvider.updatePage(page);
+//    appController.sink.add(appProvider._page);
+//  }
+//
+//  void dispose() {
+//    appController.close();
+//  }
+//}
+
+//UNUSED: App Provider wrapper for complex value mutations.
+//class AppProvider {
+//  String _page = window.defaultRouteName ?? "";
+//
+//  void updatePage(String page) {
+//    _page = page;
+//  }
+//}
