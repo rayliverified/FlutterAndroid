@@ -19,81 +19,93 @@ class _MainPageState extends State<MainPage> {
   Widget build(BuildContext context) {
     final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
 
-    return new Material(
-      borderRadius: new BorderRadius.circular(8.0),
-      child: new Scaffold(
-        appBar: new AppBar(
-          elevation: 0.0,
-          centerTitle: false,
-          backgroundColor: Colors.white,
-          automaticallyImplyLeading: false,
-          title: new Row(
-            children: [
-              Text(
-                menuItemName(_layoutSelection),
-                style: Theme.of(context).textTheme.title,
+    return WillPopScope(
+      child: new Material(
+        borderRadius: new BorderRadius.circular(8.0),
+        child: new Scaffold(
+          appBar: new AppBar(
+            elevation: 0.0,
+            centerTitle: false,
+            backgroundColor: Colors.white,
+            automaticallyImplyLeading: false,
+            title: new Row(
+              children: [
+                Text(
+                  menuItemName(_layoutSelection),
+                  style: Theme.of(context).textTheme.title,
+                ),
+                new Padding(padding: new EdgeInsets.only(right: 8.0)),
+                new Icon(menuIcon(_layoutSelection),
+                    size: 28.0, color: Colors.black),
+              ],
+            ),
+            actions: <Widget>[
+              new Center(
+                child: new IconButton(
+                    onPressed: () => {appBloc.updatePage("page_transparent")},
+                    icon: new Stack(
+                      children: <Widget>[
+                        new Align(
+                          alignment: Alignment.center,
+                          child: new Icon(Icons.shopping_cart,
+                              size: 28.0, color: Colors.black),
+                        ),
+                        new Align(
+                          alignment: Alignment.bottomRight,
+                          child: new CircleAvatar(
+                            radius: 8.0,
+                            backgroundColor: Colors.green,
+                            child: new Text("0",
+                                style: new TextStyle(
+                                    color: Colors.white, fontSize: 10.0)),
+                          ),
+                        ),
+                      ],
+                    )),
               ),
-              new Padding(padding: new EdgeInsets.only(right: 8.0)),
-              new Icon(menuIcon(_layoutSelection),
-                  size: 28.0, color: Colors.black),
             ],
           ),
-          actions: <Widget>[
-            new Center(
-              child: new IconButton(
-                  onPressed: () => {appBloc.updatePage("page_transparent")},
-                  icon: new Stack(
-                    children: <Widget>[
-                      new Align(
-                        alignment: Alignment.center,
-                        child: new Icon(Icons.shopping_cart,
-                            size: 28.0, color: Colors.black),
-                      ),
-                      new Align(
-                        alignment: Alignment.bottomRight,
-                        child: new CircleAvatar(
-                          radius: 8.0,
-                          backgroundColor: Colors.green,
-                          child: new Text("0",
-                              style: new TextStyle(
-                                  color: Colors.white, fontSize: 10.0)),
-                        ),
-                      ),
-                    ],
-                  )),
-            ),
-          ],
+          bottomNavigationBar: new CupertinoTabBar(
+            activeColor: Colors.blueAccent,
+            backgroundColor: Colors.white70,
+            items: <BottomNavigationBarItem>[
+              _buildMenuItem(
+                  icon: controllerOutlineIcon,
+                  iconSelected: controllerIcon,
+                  bottomMenu: BottomMenu.games),
+              _buildMenuItem(
+                  icon: movieOutlineIcon,
+                  iconSelected: movieIcon,
+                  bottomMenu: BottomMenu.movies),
+              _buildMenuItem(
+                  icon: browseOutlineIcon,
+                  iconSelected: browseIcon,
+                  bottomMenu: BottomMenu.browse),
+              _buildMenuItem(
+                  icon: profileOutlineIcon,
+                  iconSelected: profileIcon,
+                  bottomMenu: BottomMenu.my),
+              _buildMenuItem(
+                  icon: moreOutlineIcon,
+                  iconSelected: moreIcon,
+                  bottomMenu: BottomMenu.more),
+            ],
+            onTap: _onSelectMenuItem,
+          ),
+          body: _buildPage(),
+          backgroundColor: Colors.white,
         ),
-        bottomNavigationBar: new CupertinoTabBar(
-          activeColor: Colors.blueAccent,
-          backgroundColor: Colors.white70,
-          items: <BottomNavigationBarItem>[
-            _buildMenuItem(
-                icon: controllerOutlineIcon,
-                iconSelected: controllerIcon,
-                bottomMenu: BottomMenu.games),
-            _buildMenuItem(
-                icon: movieOutlineIcon,
-                iconSelected: movieIcon,
-                bottomMenu: BottomMenu.movies),
-            _buildMenuItem(
-                icon: browseOutlineIcon,
-                iconSelected: browseIcon,
-                bottomMenu: BottomMenu.browse),
-            _buildMenuItem(
-                icon: profileOutlineIcon,
-                iconSelected: profileIcon,
-                bottomMenu: BottomMenu.my),
-            _buildMenuItem(
-                icon: moreOutlineIcon,
-                iconSelected: moreIcon,
-                bottomMenu: BottomMenu.more),
-          ],
-          onTap: _onSelectMenuItem,
-        ),
-        body: _buildPage(),
-        backgroundColor: Colors.white,
       ),
+      onWillPop: () {
+        print("onWillPop Back: " + Navigator.canPop(context).toString());
+        if (!Navigator.canPop(context)) {
+          appBloc.navigate(Navigation.BACK);
+          return Future<bool>.value(false);
+        }
+
+        appBloc.updateBack(Navigator.canPop(context));
+        return Future<bool>.value(Navigator.canPop(context));
+      },
     );
   }
 

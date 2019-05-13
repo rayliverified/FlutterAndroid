@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-
 import 'package:flutter_android/icons.dart';
 import 'package:flutter_android/model/game.dart';
+import 'package:flutter_android/ui/back_button_custom.dart';
 import 'package:flutter_android/ui/item_game_box.dart';
 import 'package:flutter_android/ui/item_header_diagonal.dart';
 import 'package:flutter_android/ui/item_rating.dart';
@@ -22,7 +22,7 @@ class GameDetailHeader extends StatelessWidget {
         new Positioned(
           top: 26.0,
           left: 4.0,
-          child: new BackButton(color: Colors.white),
+          child: new BackButtonCustom(color: Colors.white),
         ),
         new Positioned(
           bottom: 0.0,
@@ -38,8 +38,7 @@ class GameDetailHeader extends StatelessWidget {
                     context,
                     game,
                     width: 150.0,
-                  )
-              ),
+                  )),
               new Expanded(
                 child: new Padding(
                   padding: const EdgeInsets.only(left: 16.0),
@@ -66,22 +65,21 @@ class GameDetailHeader extends StatelessWidget {
                                 children: <Widget>[
                                   new Icon(
                                     playOutlineIcon,
-                                    color: Theme
-                                        .of(context)
+                                    color: Theme.of(context)
                                         .textTheme
                                         .display2
                                         .color,
                                   ),
                                   new Text("Trailer",
                                       style:
-                                      Theme.of(context).textTheme.display2),
+                                          Theme.of(context).textTheme.display2),
                                 ],
                               ),
                               padding: const EdgeInsets.fromLTRB(
                                   6.0, 0.0, 12.0, 0.0),
                               shape: new RoundedRectangleBorder(
                                   borderRadius:
-                                  new BorderRadius.circular(30.0)),
+                                      new BorderRadius.circular(30.0)),
                               borderSide: new BorderSide(
                                   color: Colors.black54, width: 2.0),
                               highlightColor: Colors.white70,
@@ -95,22 +93,21 @@ class GameDetailHeader extends StatelessWidget {
                                 children: <Widget>[
                                   new Icon(
                                     plusIcon,
-                                    color: Theme
-                                        .of(context)
+                                    color: Theme.of(context)
                                         .textTheme
                                         .display2
                                         .color,
                                   ),
                                   new Text("Wishlist",
                                       style:
-                                      Theme.of(context).textTheme.display2),
+                                          Theme.of(context).textTheme.display2),
                                 ],
                               ),
                               padding: const EdgeInsets.fromLTRB(
                                   6.0, 0.0, 12.0, 0.0),
                               shape: new RoundedRectangleBorder(
                                   borderRadius:
-                                  new BorderRadius.circular(30.0)),
+                                      new BorderRadius.circular(30.0)),
                               borderSide: new BorderSide(
                                   color: Colors.black54, width: 2.0),
                               highlightColor: Colors.white70,

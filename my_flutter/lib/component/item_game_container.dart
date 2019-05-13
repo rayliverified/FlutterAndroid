@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-
+import 'package:flutter_android/bloc/BlocProvider.dart';
+import 'package:flutter_android/main.dart';
 import 'package:flutter_android/model/game.dart';
-import "package:flutter_android/ui/item_game_box.dart";
 import "package:flutter_android/page/page_game_details.dart";
+import "package:flutter_android/ui/item_game_box.dart";
 
 class GameContainerItem extends StatelessWidget {
   GameContainerItem(this.buildContext, this.game);
@@ -19,8 +20,8 @@ class GameContainerItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             new Hero(
-                tag: game.name,
-                child: new GameBoxItem(context, game, width: 120.0),
+              tag: game.name,
+              child: new GameBoxItem(context, game, width: 120.0),
             ),
             new Padding(padding: const EdgeInsets.only(top: 6.0)),
             new ConstrainedBox(
@@ -45,6 +46,8 @@ class GameContainerItem extends StatelessWidget {
   }
 
   void _goGameDetailsPage(BuildContext context, Game game) {
+    AppBloc appBloc = BlocProvider.of<AppBloc>(context);
+    appBloc.updateBack(true);
     Navigator.of(context).push(
       new MaterialPageRoute(
         builder: (c) {

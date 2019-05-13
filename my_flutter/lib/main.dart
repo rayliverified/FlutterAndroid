@@ -14,9 +14,11 @@ class AppBloc implements BlocBase {
   static const channel = MethodChannel('app');
 
   String _page = window.defaultRouteName ?? "";
+  bool _back = false;
 
-  BehaviorSubject<String> appController = BehaviorSubject<String>();
-  ValueObservable get getPage => appController;
+  BehaviorSubject<String> pageController = BehaviorSubject<String>();
+  ValueObservable get getPage => pageController;
+  BehaviorSubject<bool> backController = BehaviorSubject<bool>();
 
   AppBloc() {
     initPlatformChannels();
@@ -24,7 +26,21 @@ class AppBloc implements BlocBase {
 
   void updatePage(String page) {
     _page = page;
-    appController.sink.add(_page);
+    pageController.sink.add(_page);
+  }
+
+  void updateBack(bool back) {
+    if (_back != back) {
+      _back = back;
+      backController.sink.add(_back);
+      sendBackStatus(_back);
+    }
+  }
+
+  void initBackController(BuildContext context) {
+    _back = Navigator.canPop(context);
+    backController.listen(updateBack);
+    print("Back: " + _back.toString());
   }
 
   void initPlatformChannels() async {
@@ -34,8 +50,12 @@ class AppBloc implements BlocBase {
         case 'page':
           updatePage(call.arguments);
           return;
-        case 'baz':
-          throw PlatformException(code: '400', message: 'This is bad');
+        case 'navigation':
+          switch (call.arguments) {
+            case "back":
+              {}
+          }
+          return;
         default:
           throw MissingPluginException();
       }
@@ -60,8 +80,19 @@ class AppBloc implements BlocBase {
     }
   }
 
+  void sendBackStatus(bool backStatus) async {
+    try {
+      print(await channel.invokeMethod("back_status", backStatus));
+    } on PlatformException catch (e) {
+      print('Failed: ${e.message}');
+    } on MissingPluginException {
+      print('Not implemented');
+    }
+  }
+
   void dispose() {
-    appController.close();
+    pageController.close();
+    backController.close;
   }
 }
 
@@ -71,6 +102,7 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
+    appBloc.initBackController(context);
     return StreamBuilder(
         stream: appBloc.getPage,
         initialData: appBloc._page,
@@ -102,6 +134,7 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
+    final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
     return new MaterialApp(
       title: 'Flutter Demo',
       theme: defaultTheme,
@@ -121,7 +154,9 @@ class Transparent extends StatelessWidget {
         home: Scaffold(
           body: Center(
               child: GestureDetector(
-                  onTap: () => appBloc.navigate(Navigation.BACK),
+                  onTap: () {
+                    appBloc.navigate(Navigation.BACK);
+                  },
                   child: Text('Transparent Scaffold Background'))),
           backgroundColor: HexColor('#00FFFFFF'),
         ));
