@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_android/bloc/BlocProvider.dart';
 import 'package:flutter_android/page/page_main.dart';
 import 'package:flutter_android/themes.dart';
@@ -10,16 +11,45 @@ import 'package:rxdart/rxdart.dart';
 void main() => runApp(BlocProvider<AppBloc>(bloc: AppBloc(), child: App()));
 
 class AppBloc implements BlocBase {
+  static const channel = MethodChannel('app');
+
   String _page = window.defaultRouteName ?? "";
 
   BehaviorSubject<String> appController = BehaviorSubject<String>();
   ValueObservable get getPage => appController;
 
-  AppBloc() {}
+  AppBloc() {
+    initPlatformChannels();
+  }
 
   void updatePage(String page) {
     _page = page;
     appController.sink.add(_page);
+  }
+
+  void initPlatformChannels() async {
+//    // Invoke a platform method.
+//    const name = 'bar'; // or 'baz', or 'unknown'
+//    const value = 'world';
+//    try {
+//      print(await channel.invokeMethod(name, value));
+//    } on PlatformException catch (e) {
+//      print('$name failed: ${e.message}');
+//    } on MissingPluginException {
+//      print('$name not implemented');
+//    }
+    // Receive method invocations from platform and return results.
+    channel.setMethodCallHandler((MethodCall call) async {
+      switch (call.method) {
+        case 'page':
+          updatePage(call.arguments);
+          return;
+        case 'baz':
+          throw PlatformException(code: '400', message: 'This is bad');
+        default:
+          throw MissingPluginException();
+      }
+    });
   }
 
   void dispose() {

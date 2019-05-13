@@ -14,6 +14,7 @@ import android.widget.FrameLayout
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import io.flutter.facade.FlutterFragment
+import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterView
 
 class MainActivity : AppCompatActivity() {
@@ -33,8 +34,45 @@ class MainActivity : AppCompatActivity() {
         )
         flutterView.enableTransparentBackground()
 
+        val channel = MethodChannel(flutterView, "app")
+
+        // Receive method invocations from Dart and return results.
+        channel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "navigation" -> {
+                    when (call.arguments) {
+                        "back" -> {
+                            onBackPressed()
+                        }
+                    }
+                    result.success("Hello, ${call.arguments}")
+                }
+                "baz" -> {
+                    result.error("400", "This is bad", null)
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        button_1.setOnClickListener {
+            //Invoke Flutter Method.
+            channel.invokeMethod("page", "page_main", object: MethodChannel.Result {
+                override fun success(result: Any?) {
+                    Log.i("Flutter Channel", "$result")
+                }
+                override fun error(code: String?, msg: String?, details: Any?) {
+                    Log.e("Flutter Channel", "$msg")
+                }
+                override fun notImplemented() {
+                    Log.e("Flutter Channel", "Not implemented")
+                }
+            })
+        }
+
         fab.setOnClickListener { view ->
-//            val tx = supportFragmentManager.beginTransaction()
+            //            val tx = supportFragmentManager.beginTransaction()
 //            val flutterFragment = Flutter.createFragment("page_transparent")
 //            tx.replace(R.id.fragment_container, flutterFragment)
 //            tx.commit()
@@ -53,8 +91,8 @@ class MainActivity : AppCompatActivity() {
             }
 
             val dialog = AlertDialog.Builder(this)
-                    .setView(flutterView)
-                    .show()
+                .setView(flutterView)
+                .show()
 
 //            viewInflated.reset_password_done_button.setOnClickListener {
 //                dialog.dismiss()
