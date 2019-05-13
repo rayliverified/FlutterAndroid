@@ -97,7 +97,7 @@ class _MainPageState extends State<MainPage> {
         ),
       ),
       onWillPop: () {
-        print("onWillPop Back: " + Navigator.canPop(context).toString());
+        print("onWillPop Back Main: " + Navigator.canPop(context).toString());
         if (!Navigator.canPop(context)) {
           appBloc.navigate(Navigation.BACK);
           return Future<bool>.value(false);

@@ -40,7 +40,7 @@ class MainActivity : AppCompatActivity() {
                 "navigation" -> {
                     when (call.arguments) {
                         "back" -> {
-                            //TODO Handle back navigation here.
+                            onBackPressed()
                         }
                     }
                     result.success("Hello, ${call.arguments}")
@@ -65,6 +65,21 @@ class MainActivity : AppCompatActivity() {
         button_1.setOnClickListener {
             //Invoke Flutter Method.
             flutterChannel.invokeMethod("page", "page_main", object: MethodChannel.Result {
+                override fun success(result: Any?) {
+                    Log.i("Flutter Channel", "$result")
+                }
+                override fun error(code: String?, msg: String?, details: Any?) {
+                    Log.e("Flutter Channel", "$msg")
+                }
+                override fun notImplemented() {
+                    Log.e("Flutter Channel", "Not implemented")
+                }
+            })
+        }
+
+        button_2.setOnClickListener {
+            //Invoke Flutter Method.
+            flutterChannel.invokeMethod("page", "page_transparent", object: MethodChannel.Result {
                 override fun success(result: Any?) {
                     Log.i("Flutter Channel", "$result")
                 }

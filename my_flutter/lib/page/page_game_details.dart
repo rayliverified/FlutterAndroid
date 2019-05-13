@@ -114,13 +114,15 @@ class _GameDetailsPageState extends State<GameDetailsPage> {
         ),
       ),
       onWillPop: () {
-        print("onWillPop Back: " + Navigator.canPop(context).toString());
         if (!Navigator.canPop(context)) {
           appBloc.navigate(Navigation.BACK);
           return Future<bool>.value(false);
         }
 
-        appBloc.updateBack(Navigator.canPop(context));
+        Navigator.pop(context);
+        bool canPop = Navigator.canPop(context);
+        appBloc.updateBack(canPop);
+        print("onWillPop Back Details: " + canPop.toString());
         return Future<bool>.value(Navigator.canPop(context));
       },
     );

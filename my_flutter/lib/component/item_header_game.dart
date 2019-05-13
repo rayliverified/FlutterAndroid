@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_android/icons.dart';
 import 'package:flutter_android/model/game.dart';
-import 'package:flutter_android/ui/back_button_custom.dart';
 import 'package:flutter_android/ui/item_game_box.dart';
 import 'package:flutter_android/ui/item_header_diagonal.dart';
 import 'package:flutter_android/ui/item_rating.dart';
@@ -22,7 +21,7 @@ class GameDetailHeader extends StatelessWidget {
         new Positioned(
           top: 26.0,
           left: 4.0,
-          child: new BackButtonCustom(color: Colors.white),
+          child: new BackButton(color: Colors.white),
         ),
         new Positioned(
           bottom: 0.0,
