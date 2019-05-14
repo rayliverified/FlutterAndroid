@@ -15,8 +15,6 @@ class MainActivity : AppCompatActivity() {
 
     var TAG = MainActivity::class.java.name
 
-    var switchRouteCounter = 0
-    var routeArray = arrayListOf("page_main", "page_transparent")
     var flutterCanGoBack: Boolean = false;
     lateinit var flutterChannel: MethodChannel;
     lateinit var flutterView: FlutterView;
@@ -40,10 +38,11 @@ class MainActivity : AppCompatActivity() {
                 "navigation" -> {
                     when (call.arguments) {
                         "back" -> {
+                            Log.d(TAG, "Back")
                             onBackPressed()
                         }
                     }
-                    result.success("Hello, ${call.arguments}")
+                    result.success("Navigation: ${call.arguments}")
                 }
                 "back_status" -> {
                     try {
@@ -52,9 +51,7 @@ class MainActivity : AppCompatActivity() {
                     } catch (e: TypeCastException) {
                         Log.e(TAG, "${call.arguments}")
                     }
-                }
-                "baz" -> {
-                    result.error("400", "This is bad", null)
+                    result.success("Back Status: ${call.arguments}")
                 }
                 else -> {
                     result.notImplemented()
@@ -104,14 +101,6 @@ class MainActivity : AppCompatActivity() {
 //            tx.commit()
 //            val viewInflated = LayoutInflater.from(this).inflate(R.layout.layoutDialog, view as ViewGroup?, false)
 
-//            Log.d("Initial Route", routeArray[switchRouteCounter])
-//            flutterView.setInitialRoute(routeArray[switchRouteCounter])
-//            if (switchRouteCounter >= routeArray.size - 1) {
-//                switchRouteCounter = 0
-//            } else {
-//                switchRouteCounter += 1
-//            }
-
 //            if (flutterView.parent != null) {
 //                (flutterView.parent as ViewGroup).removeView(flutterView)
 //            }
@@ -140,21 +129,7 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         Log.d(TAG, "onBackPressed")
 
-        //Invoke Flutter Method.
-//        flutterChannel.invokeMethod("navigation", "back", object: MethodChannel.Result {
-//            override fun success(result: Any?) {
-//                Log.i("Flutter Channel", "$result")
-//                flutterView.popRoute()
-//                return
-//            }
-//            override fun error(code: String?, msg: String?, details: Any?) {
-//                Log.e("Flutter Channel", "$msg")
-//            }
-//            override fun notImplemented() {
-//                Log.e("Flutter Channel", "Not implemented")
-//            }
-//        })
-
+        //Send back event to FlutterView if active and can go back.
         if (flutterCanGoBack) {
             flutterView.popRoute()
             return

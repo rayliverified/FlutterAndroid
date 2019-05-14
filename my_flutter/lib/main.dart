@@ -18,7 +18,10 @@ class AppBloc implements BlocBase {
 
   BehaviorSubject<String> pageController = BehaviorSubject<String>();
   ValueObservable get getPage => pageController;
-  BehaviorSubject<bool> backController = BehaviorSubject<bool>();
+
+  void dispose() {
+    pageController.close();
+  }
 
   AppBloc() {
     initPlatformChannels();
@@ -81,11 +84,6 @@ class AppBloc implements BlocBase {
     } on MissingPluginException {
       print('Not implemented');
     }
-  }
-
-  void dispose() {
-    pageController.close();
-    backController.close;
   }
 }
 
