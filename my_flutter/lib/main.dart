@@ -32,15 +32,8 @@ class AppBloc implements BlocBase {
   void updateBack(bool back) {
     if (_back != back) {
       _back = back;
-      backController.sink.add(_back);
       sendBackStatus(_back);
     }
-  }
-
-  void initBackController(BuildContext context) {
-    _back = Navigator.canPop(context);
-    backController.listen(updateBack);
-    print("Back: " + _back.toString());
   }
 
   void initPlatformChannels() async {
@@ -102,7 +95,6 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppBloc appBloc = BlocProvider.of<AppBloc>(context);
-    appBloc.initBackController(context);
     return StreamBuilder(
         stream: appBloc.getPage,
         initialData: appBloc._page,
