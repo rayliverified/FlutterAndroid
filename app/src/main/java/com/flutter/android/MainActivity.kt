@@ -2,59 +2,112 @@ package com.flutter.android
 
 import android.os.Bundle
 import android.util.Log
-import android.view.LayoutInflater
+import android.view.*
 import androidx.appcompat.app.AppCompatActivity;
-import android.view.Menu
-import android.view.MenuItem
-import android.view.ViewGroup
 
 import kotlinx.android.synthetic.main.activity_main.*
 import io.flutter.facade.Flutter
-import android.widget.FrameLayout
-import androidx.appcompat.app.AlertDialog
-import androidx.fragment.app.Fragment
 import io.flutter.facade.FlutterFragment
+import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterView
 
 class MainActivity : AppCompatActivity() {
 
-    var switchRouteCounter = 0
-    var routeArray = arrayListOf("page_main", "page_transparent")
+    var TAG = MainActivity::class.java.name
+
+    var flutterCanGoBack: Boolean = false;
+    lateinit var flutterChannel: MethodChannel;
+    lateinit var flutterView: FlutterView;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
 
-        val flutterView = Flutter.createView(
+        flutterView = Flutter.createView(
             this@MainActivity,
             lifecycle,
             "page_main"
         )
         flutterView.enableTransparentBackground()
 
+        flutterChannel = MethodChannel(flutterView, "app")
+        // Receive method invocations from Dart and return results.
+        flutterChannel.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "navigation" -> {
+                    when (call.arguments) {
+                        "back" -> {
+                            Log.d(TAG, "Back")
+                            onBackPressed()
+                        }
+                    }
+                    result.success("Navigation: ${call.arguments}")
+                }
+                "back_status" -> {
+                    try {
+                        Log.d(TAG, "Back Status: ${call.arguments}")
+                        flutterCanGoBack = call.arguments as Boolean
+                    } catch (e: TypeCastException) {
+                        Log.e(TAG, "${call.arguments}")
+                    }
+                    result.success("Back Status: ${call.arguments}")
+                }
+                else -> {
+                    result.notImplemented()
+                }
+            }
+        }
+
+        button_1.setOnClickListener {
+            //Invoke Flutter Method.
+            flutterChannel.invokeMethod("page", "page_main", object: MethodChannel.Result {
+                override fun success(result: Any?) {
+                    Log.i("Flutter Channel", "$result")
+                }
+                override fun error(code: String?, msg: String?, details: Any?) {
+                    Log.e("Flutter Channel", "$msg")
+                }
+                override fun notImplemented() {
+                    Log.e("Flutter Channel", "Not implemented")
+                }
+            })
+        }
+
+        button_2.setOnClickListener {
+            //Invoke Flutter Method.
+            flutterChannel.invokeMethod("page", "page_transparent", object: MethodChannel.Result {
+                override fun success(result: Any?) {
+                    Log.i("Flutter Channel", "$result")
+                }
+                override fun error(code: String?, msg: String?, details: Any?) {
+                    Log.e("Flutter Channel", "$msg")
+                }
+                override fun notImplemented() {
+                    Log.e("Flutter Channel", "Not implemented")
+                }
+            })
+        }
+
+        if (flutterView.parent != null) {
+            (flutterView.parent as ViewGroup).removeView(flutterView)
+        }
+        view_flutter_container.addView(flutterView)
+
         fab.setOnClickListener { view ->
-//            val tx = supportFragmentManager.beginTransaction()
+            //            val tx = supportFragmentManager.beginTransaction()
 //            val flutterFragment = Flutter.createFragment("page_transparent")
 //            tx.replace(R.id.fragment_container, flutterFragment)
 //            tx.commit()
 //            val viewInflated = LayoutInflater.from(this).inflate(R.layout.layoutDialog, view as ViewGroup?, false)
 
-            Log.d("Initial Route", routeArray[switchRouteCounter])
-            flutterView.setInitialRoute(routeArray[switchRouteCounter])
-            if (switchRouteCounter >= routeArray.size - 1) {
-                switchRouteCounter = 0
-            } else {
-                switchRouteCounter += 1
-            }
-
-            if (flutterView.parent != null) {
-                (flutterView.parent as ViewGroup).removeView(flutterView)
-            }
-
-            val dialog = AlertDialog.Builder(this)
-                    .setView(flutterView)
-                    .show()
+//            if (flutterView.parent != null) {
+//                (flutterView.parent as ViewGroup).removeView(flutterView)
+//            }
+//
+//            val dialog = AlertDialog.Builder(this)
+//                .setView(flutterView)
+//                .show()
 
 //            viewInflated.reset_password_done_button.setOnClickListener {
 //                dialog.dismiss()
@@ -71,6 +124,18 @@ class MainActivity : AppCompatActivity() {
 //            val layout = FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
 //            addContentView(flutterView, layout)
         }
+    }
+
+    override fun onBackPressed() {
+        Log.d(TAG, "onBackPressed")
+
+        //Send back event to FlutterView if active and can go back.
+        if (flutterCanGoBack) {
+            flutterView.popRoute()
+            return
+        }
+
+        super.onBackPressed()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
