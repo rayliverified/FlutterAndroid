@@ -15,9 +15,9 @@ class MainActivity : AppCompatActivity() {
 
     var TAG = MainActivity::class.java.name
 
-    var flutterCanGoBack: Boolean = false;
-    lateinit var flutterChannel: MethodChannel;
-    lateinit var flutterView: FlutterView;
+    var flutterCanGoBack: Boolean = false
+    lateinit var flutterChannel: MethodChannel
+    lateinit var flutterView: FlutterView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
