@@ -3,19 +3,28 @@ package com.flutter.android
 import android.os.Bundle
 import android.util.Log
 import android.view.*
+import android.widget.FrameLayout
 import androidx.appcompat.app.AppCompatActivity;
 
 import kotlinx.android.synthetic.main.activity_main.*
 import io.flutter.facade.Flutter
-import io.flutter.facade.FlutterFragment
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.view.FlutterView
+import android.view.ViewGroup
+
 
 class MainActivity : AppCompatActivity() {
 
     var TAG = MainActivity::class.java.name
 
-    var flutterCanGoBack: Boolean = false
+    val CHANNEL_METHOD_PAGE = "CHANNEL_METHOD_PAGE";
+    val CHANNEL_METHOD_NAVIGATION = "CHANNEL_METHOD_NAVIGATION";
+    val NAVIGATION_BACK = "NAVIGATION_BACK";
+    val NAVIGATION_CLOSE = "NAVIGATION_CLOSE";
+    val CHANNEL_METHOD_BACK_STATUS = "CHANNEL_METHOD_BACK_STATUS";
+
+    var flutterBackStatus: Boolean = false
+    var flutterViewVisible: Boolean = false
     lateinit var flutterChannel: MethodChannel
     lateinit var flutterView: FlutterView
 
@@ -27,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         flutterView = Flutter.createView(
             this@MainActivity,
             lifecycle,
-            "page_main"
+            "PAGE_MAIN"
         )
         flutterView.enableTransparentBackground()
 
@@ -35,19 +44,23 @@ class MainActivity : AppCompatActivity() {
         // Receive method invocations from Dart and return results.
         flutterChannel.setMethodCallHandler { call, result ->
             when (call.method) {
-                "navigation" -> {
+                CHANNEL_METHOD_NAVIGATION -> {
                     when (call.arguments) {
-                        "back" -> {
-                            Log.d(TAG, "Back")
+                        NAVIGATION_BACK -> {
+                            Log.d(TAG, "NAVIGATION_BACK")
                             onBackPressed()
+                        }
+                        NAVIGATION_CLOSE -> {
+                            Log.d(TAG, "NAVIGATION_CLOSE")
+                            hideFlutterView()
                         }
                     }
                     result.success("Navigation: ${call.arguments}")
                 }
-                "back_status" -> {
+                CHANNEL_METHOD_BACK_STATUS -> {
                     try {
                         Log.d(TAG, "Back Status: ${call.arguments}")
-                        flutterCanGoBack = call.arguments as Boolean
+                        flutterBackStatus = call.arguments as Boolean
                     } catch (e: TypeCastException) {
                         Log.e(TAG, "${call.arguments}")
                     }
@@ -61,13 +74,15 @@ class MainActivity : AppCompatActivity() {
 
         button_1.setOnClickListener {
             //Invoke Flutter Method.
-            flutterChannel.invokeMethod("page", "page_main", object: MethodChannel.Result {
+            flutterChannel.invokeMethod(CHANNEL_METHOD_PAGE, "PAGE_MAIN", object : MethodChannel.Result {
                 override fun success(result: Any?) {
                     Log.i("Flutter Channel", "$result")
                 }
+
                 override fun error(code: String?, msg: String?, details: Any?) {
                     Log.e("Flutter Channel", "$msg")
                 }
+
                 override fun notImplemented() {
                     Log.e("Flutter Channel", "Not implemented")
                 }
@@ -76,23 +91,54 @@ class MainActivity : AppCompatActivity() {
 
         button_2.setOnClickListener {
             //Invoke Flutter Method.
-            flutterChannel.invokeMethod("page", "page_transparent", object: MethodChannel.Result {
+            flutterChannel.invokeMethod(CHANNEL_METHOD_PAGE, "PAGE_TRANSPARENT", object : MethodChannel.Result {
                 override fun success(result: Any?) {
                     Log.i("Flutter Channel", "$result")
                 }
+
                 override fun error(code: String?, msg: String?, details: Any?) {
                     Log.e("Flutter Channel", "$msg")
                 }
+
                 override fun notImplemented() {
                     Log.e("Flutter Channel", "Not implemented")
                 }
             })
         }
 
-        if (flutterView.parent != null) {
-            (flutterView.parent as ViewGroup).removeView(flutterView)
+        button_3.setOnClickListener {
+            flutterViewVisible = true
+            flutterChannel.invokeMethod(
+                CHANNEL_METHOD_PAGE,
+                "PAGE_DELETE_ACCOUNT",
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        Log.i("Flutter Channel", "$result")
+                    }
+
+                    override fun error(code: String?, msg: String?, details: Any?) {
+                        Log.e("Flutter Channel", "$msg")
+                    }
+
+                    override fun notImplemented() {
+                        Log.e("Flutter Channel", "Not implemented")
+                    }
+                })
+
+            if (flutterView.parent != null) {
+                (flutterView.parent as ViewGroup).removeView(flutterView)
+            }
+            val layout = FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+            )
+            addContentView(flutterView, layout)
         }
-        view_flutter_container.addView(flutterView)
+
+//        if (flutterView.parent != null) {
+//            (flutterView.parent as ViewGroup).removeView(flutterView)
+//        }
+//        view_flutter_container.addView(flutterView)
 
         fab.setOnClickListener { view ->
             //            val tx = supportFragmentManager.beginTransaction()
@@ -128,13 +174,19 @@ class MainActivity : AppCompatActivity() {
 
     override fun onBackPressed() {
         Log.d(TAG, "onBackPressed")
+        Log.d(TAG, "Flutter Back Status: $flutterBackStatus")
 
         //Send back event to FlutterView if active and can go back.
-        if (flutterCanGoBack) {
+        if (flutterBackStatus) {
             flutterView.popRoute()
             return
         }
 
+        if (flutterViewVisible) {
+            hideFlutterView()
+        }
+
+        Log.d(TAG, "super.onBackPressed")
         super.onBackPressed()
     }
 
@@ -151,6 +203,13 @@ class MainActivity : AppCompatActivity() {
         return when (item.itemId) {
             R.id.action_settings -> true
             else -> super.onOptionsItemSelected(item)
+        }
+    }
+
+    fun hideFlutterView() {
+        flutterViewVisible = false
+        if (flutterView.parent != null) {
+            (flutterView.parent as ViewGroup).removeView(flutterView)
         }
     }
 }
