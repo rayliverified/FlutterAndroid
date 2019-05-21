@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                         }
                         NAVIGATION_CLOSE -> {
                             Log.d(TAG, "NAVIGATION_CLOSE")
-                            hideFlutterView()
+                            closeFlutterView()
                         }
                     }
                     result.success("Navigation: ${call.arguments}")
@@ -183,7 +183,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         if (flutterViewVisible) {
-            hideFlutterView()
+            closeFlutterView()
+            return
         }
 
         Log.d(TAG, "super.onBackPressed")
@@ -206,8 +207,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun hideFlutterView() {
+    fun closeFlutterView() {
         flutterViewVisible = false
+        flutterBackStatus = false
+        //Clear FlutterView contents.
+        flutterChannel.invokeMethod(
+            CHANNEL_METHOD_PAGE,
+            "PAGE_BLANK",
+            object : MethodChannel.Result {
+                override fun success(result: Any?) {
+                    Log.i("Flutter Channel", "$result")
+                }
+
+                override fun error(code: String?, msg: String?, details: Any?) {
+                    Log.e("Flutter Channel", "$msg")
+                }
+
+                override fun notImplemented() {
+                    Log.e("Flutter Channel", "Not implemented")
+                }
+            })
         if (flutterView.parent != null) {
             (flutterView.parent as ViewGroup).removeView(flutterView)
         }
