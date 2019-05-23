@@ -20,6 +20,7 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         mFlutterWrapper = FlutterWrapper()
+//        mFlutterWrapper.preInitializeFlutter(this)
         mFlutterWrapper.initFlutterView(this@MainActivity, lifecycle, "PAGE_MAIN")
 
         button_1.setOnClickListener {
