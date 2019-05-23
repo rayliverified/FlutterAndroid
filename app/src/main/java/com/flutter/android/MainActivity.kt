@@ -5,7 +5,6 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import io.flutter.plugin.common.MethodChannel
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -21,30 +20,14 @@ class MainActivity : AppCompatActivity() {
         setSupportActionBar(toolbar)
 
         mFlutterWrapper = FlutterWrapper()
-//        mFlutterWrapper.initFlutterView(this@MainActivity, lifecycle, "PAGE_MAIN")
+        mFlutterWrapper.initFlutterView(this@MainActivity, lifecycle, "PAGE_MAIN")
 
         button_1.setOnClickListener {
             mFlutterWrapper.showFlutterView(this@MainActivity, lifecycle, "PAGE_MAIN")
         }
 
         button_2.setOnClickListener {
-            mFlutterWrapper.flutterChannel?.invokeMethod(
-                FlutterConstants.CHANNEL_METHOD_PAGE,
-                "PAGE_DELETE_ACCOUNT",
-                object : MethodChannel.Result {
-                    override fun success(result: Any?) {
-                        Log.i("Flutter Channel", "$result")
-                    }
-
-                    override fun error(code: String?, msg: String?, details: Any?) {
-                        Log.e("Flutter Channel", "$msg")
-                    }
-
-                    override fun notImplemented() {
-                        Log.e("Flutter Channel", "Not implemented")
-                    }
-                })
-            mFlutterWrapper.showFlutterView()
+            mFlutterWrapper.showFlutterView("PAGE_DELETE_ACCOUNT")
         }
 
 //

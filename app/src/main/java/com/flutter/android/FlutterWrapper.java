@@ -39,6 +39,10 @@ public class FlutterWrapper {
     private FrameLayout.LayoutParams mFrameLayoutParams;
 
     public FlutterWrapper() {
+        mFrameLayoutParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        );
     }
 
     public static FlutterWrapper getInstance() {
@@ -77,15 +81,15 @@ public class FlutterWrapper {
 
     private void createFlutterView(Activity activity, Lifecycle lifecycle, String initialRoute, Boolean show) {
         mActivity = activity;
+        //Flutter initialization takes time. Show a graceful loading indicator.
+        if (show) {
+            showLoadingView(activity);
+        }
+
         if (mFlutterView != null) {
             Log.d(TAG, "Flutter View Already Initialized");
             showFlutterView(initialRoute);
             return;
-        }
-
-        //Flutter initialization takes time. Show a graceful loading indicator.
-        if (show) {
-            showLoadingView(activity);
         }
 
         //Create the FlutterView.
@@ -190,11 +194,15 @@ public class FlutterWrapper {
 
     private void showLoadingView(Activity activity) {
         if (mLoadingView == null) {
-            mFrameLayoutParams = new FrameLayout.LayoutParams(
-                    FrameLayout.LayoutParams.MATCH_PARENT,
-                    FrameLayout.LayoutParams.MATCH_PARENT
-            );
             mLoadingView = LayoutInflater.from(activity.getApplicationContext()).inflate(R.layout.layout_flutter_loading, null);
+            FrameLayout loadingLayout = mLoadingView.findViewById(R.id.layout_loading);
+            loadingLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    Log.d(TAG, "Click Loading Layout Hidden");
+                    mLoadingView.setVisibility(View.GONE);
+                }
+            });
         }
         activity.addContentView(mLoadingView, mFrameLayoutParams);
         if (mLoadingView.getVisibility() == View.GONE) {
@@ -203,7 +211,7 @@ public class FlutterWrapper {
     }
 
     private void hideLoadingView() {
-        if (mLoadingView.getParent() != null) {
+        if (mLoadingView != null && mLoadingView.getParent() != null) {
             ((ViewGroup) mLoadingView.getParent()).removeView(mLoadingView);
         }
     }
