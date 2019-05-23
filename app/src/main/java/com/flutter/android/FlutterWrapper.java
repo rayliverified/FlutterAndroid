@@ -75,7 +75,7 @@ public class FlutterWrapper {
         createFlutterView(activity, lifecycle, initialRoute, false);
     }
 
-    public void showFlutterView(Activity activity, Lifecycle lifecycle, String initialRoute) {
+    public void initFlutterViewAndShow(Activity activity, Lifecycle lifecycle, String initialRoute) {
         createFlutterView(activity, lifecycle, initialRoute, true);
     }
 
