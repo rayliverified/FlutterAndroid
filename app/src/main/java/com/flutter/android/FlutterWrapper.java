@@ -26,7 +26,7 @@ public class FlutterWrapper {
 
     private static final String TAG = FlutterWrapper.class.getSimpleName();
 
-    //Keep a single copy of this in memory unless required to create a new instance explicitly.
+    //Keep a single copy of this class in memory unless required to create a new instance explicitly.
     private static FlutterWrapper mInstance;
     public boolean flutterBackStatus = false;
     public boolean flutterViewVisible = false;
@@ -39,6 +39,7 @@ public class FlutterWrapper {
     private FrameLayout.LayoutParams mFrameLayoutParams;
 
     public FlutterWrapper() {
+        //FrameLayoutParams used to add FlutterView and LoadingView to the view hierarchy.
         mFrameLayoutParams = new FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
@@ -71,14 +72,39 @@ public class FlutterWrapper {
         return this;
     }
 
+    /**
+     * Initialize FlutterView in background.
+     *
+     * @param activity     - activity to attach FlutterView instance to.
+     * @param lifecycle    -activity lifecycle callbacks.
+     * @param initialRoute - starting Flutter Module page.
+     */
     public void initFlutterView(Activity activity, Lifecycle lifecycle, String initialRoute) {
         createFlutterView(activity, lifecycle, initialRoute, false);
     }
 
+    /**
+     * Initiallizes FlutterView and shows as soon as possible.
+     * Displays a loading indicator during FlutterView initialization time.
+     *
+     * @param activity - activity to attach FlutterView instance to.
+     * @param lifecycle -activity lifecycle callbacks.
+     * @param initialRoute - starting Flutter Module page.
+     */
     public void initFlutterViewAndShow(Activity activity, Lifecycle lifecycle, String initialRoute) {
         createFlutterView(activity, lifecycle, initialRoute, true);
     }
 
+    /**
+     * Create the FlutterView with appropriate attributes (i.e. transparent background)
+     * and main MethodChannel. Displays a loading indicator if FlutterView should
+     * be shown immediately. If FlutterView is already initialized, show FlutterView.
+     *
+     * @param activity - activity to attach FlutterView instance to.
+     * @param lifecycle -activity lifecycle callbacks.
+     * @param initialRoute - starting Flutter Module page.
+     * @param show - flag to control whether to show FlutterView once loaded.
+     */
     private void createFlutterView(Activity activity, Lifecycle lifecycle, String initialRoute, Boolean show) {
         mActivity = activity;
         //Flutter initialization takes time. Show a graceful loading indicator.
@@ -130,10 +156,18 @@ public class FlutterWrapper {
         });
     }
 
+    /**
+     * Show active FlutterView.
+     */
     public void showFlutterView() {
         showFlutterView("");
     }
 
+    /**
+     * Show active FlutterView and set route. Requires a FlutterView to
+     * be active. If no FlutterView is active, this method does nothing.
+     * @param route - FlutterView page to show.
+     */
     public void showFlutterView(String route) {
         Log.d(TAG, "Show Flutter View");
         if (mFlutterView == null) {
@@ -162,9 +196,15 @@ public class FlutterWrapper {
 
         flutterViewVisible = true;
         startTime = System.currentTimeMillis();
+        if (mFlutterView.getParent() != null) {
+            ((ViewGroup) mFlutterView.getParent()).removeView(mFlutterView);
+        }
         mActivity.addContentView(mFlutterView, mFrameLayoutParams);
     }
 
+    /**
+     * Hide active FlutterView by removing view from parent.
+     */
     public void hideFlutterView() {
         flutterViewVisible = false;
         flutterBackStatus = false;
@@ -192,9 +232,16 @@ public class FlutterWrapper {
         }
     }
 
+    /**
+     * Show a loading indicator while the FlutterView is initializing.
+     *
+     * @param activity - activity to attach LoadingView instance to.
+     */
     private void showLoadingView(Activity activity) {
+        //Create the LoadingView layout.
         if (mLoadingView == null) {
             mLoadingView = LayoutInflater.from(activity.getApplicationContext()).inflate(R.layout.layout_flutter_loading, null);
+            //Error fallback to manually close loading indicator on click.
             FrameLayout loadingLayout = mLoadingView.findViewById(R.id.layout_loading);
             loadingLayout.setOnClickListener(new View.OnClickListener() {
                 @Override
@@ -210,28 +257,39 @@ public class FlutterWrapper {
         }
     }
 
+    /**
+     * Hide LoadingView by removing layout from parent.
+     */
     private void hideLoadingView() {
         if (mLoadingView != null && mLoadingView.getParent() != null) {
             ((ViewGroup) mLoadingView.getParent()).removeView(mLoadingView);
         }
     }
 
+    /**
+     * Pop FlutterView route.
+     */
     public void popRoute() {
+        //Safety catch to reset flags if FlutterView has not been initialized.
         if (mFlutterView == null) {
             Log.d(TAG, "Flutter View Null");
             flutterBackStatus = false;
+            flutterViewVisible = false;
             return;
         }
 
         mFlutterView.popRoute();
     }
 
+    /**
+     * Returns the current MethodChannel attached to the FlutterView.
+     *
+     * @return - MethodChannel attached to the active FlutterView.
+     * Returns null if no FlutterView or MethodChannel has been created.
+     */
     public MethodChannel getFlutterChannel() {
         if (mFlutterView == null) {
             return null;
-        }
-        if (mFlutterChannel == null) {
-            mFlutterChannel = new MethodChannel(mFlutterView, "app");
         }
 
         return mFlutterChannel;
@@ -288,6 +346,7 @@ public class FlutterWrapper {
             public void onStart() {
                 super.onStart();
                 Log.d(TAG, "Flutter View onStart");
+                //Called by initFlutterViewAndShow() to display FlutterView after initialization.
                 if (show && showFirstTime) {
                     showFirstTime = false;
                     showFlutterView();
@@ -300,6 +359,7 @@ public class FlutterWrapper {
                 setAlpha(1.0f);
                 Log.d(TAG, "Flutter View onFirstFrame");
                 Log.d("Benchmark", String.valueOf(System.currentTimeMillis() - startTime));
+                //FlutterView is visible to the user. Hide LoadingView.
                 hideLoadingView();
             }
         };
