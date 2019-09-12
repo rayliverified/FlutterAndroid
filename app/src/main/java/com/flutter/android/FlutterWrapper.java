@@ -2,17 +2,23 @@ package com.flutter.android;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.res.Resources;
+import android.os.Build;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.FrameLayout;
+
 import androidx.annotation.NonNull;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
+
+import java.util.ArrayList;
+
 import io.flutter.plugin.common.BasicMessageChannel;
-import io.flutter.plugin.common.MethodCall;
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.plugin.common.StringCodec;
 import io.flutter.plugins.GeneratedPluginRegistrant;
@@ -20,7 +26,6 @@ import io.flutter.view.FlutterMain;
 import io.flutter.view.FlutterNativeView;
 import io.flutter.view.FlutterRunArguments;
 import io.flutter.view.FlutterView;
-import kotlin.TypeCastException;
 
 public class FlutterWrapper {
 
@@ -32,22 +37,23 @@ public class FlutterWrapper {
     private Context mContext;
     private FlutterView mFlutterView;
     private MethodChannel mFlutterChannel;
-    private View mLoadingView;
-    private FrameLayout.LayoutParams mFrameLayoutParams;
+    private MethodChannel.MethodCallHandler mMethodCallHandler;
+    private ArrayList<FlutterCloseCallback> mFlutterCloseCallbacks = new ArrayList<>();
 
+    private View mLoadingView;
+
+    public boolean flutterBackBlock = false;
     public boolean flutterBackStatus = false;
     public boolean flutterViewVisible = false;
     private boolean preInitialized = false;
     private long startFlutterViewStartTime = 0;
     private long showFlutterViewStartTime = 0;
+    private String flutterConfig = "";
+    private String route = "";
+    private String flutterData = "";
+    private boolean setFlutterData = false;
 
-    public FlutterWrapper() {
-        //FrameLayoutParams used to add FlutterView and LoadingView to the view hierarchy.
-        mFrameLayoutParams = new FrameLayout.LayoutParams(
-                FrameLayout.LayoutParams.MATCH_PARENT,
-                FrameLayout.LayoutParams.MATCH_PARENT
-        );
-    }
+    public FlutterWrapper() { }
 
     public static FlutterWrapper getInstance() {
         return mInstance;
@@ -59,10 +65,14 @@ public class FlutterWrapper {
         if (mInstance == null) {
             Log.d(TAG, "Flutter Wrapper Initialization");
             mInstance = new FlutterWrapper();
-            preInitializeFlutter(context);
         }
 
         return this;
+    }
+
+    public FlutterWrapper init(Context context, String flutterConfig) {
+        this.flutterConfig = flutterConfig;
+        return init(context);
     }
 
     /**
@@ -133,33 +143,10 @@ public class FlutterWrapper {
         );
         mFlutterView.enableTransparentBackground();
         mFlutterChannel = new MethodChannel(mFlutterView, "app");
-        // Receive method invocations from Dart and return results.
-        mFlutterChannel.setMethodCallHandler(new MethodChannel.MethodCallHandler() {
-            @Override
-            public void onMethodCall(MethodCall methodCall, MethodChannel.Result result) {
-                switch (methodCall.method) {
-                    case FlutterConstants.CHANNEL_METHOD_NAVIGATION:
-                        switch ((String) methodCall.arguments) {
-                            case FlutterConstants.NAVIGATION_CLOSE:
-                                hideFlutterView();
-                                break;
-                        }
-                        result.success(methodCall.method + methodCall.arguments);
-                        break;
-                    case FlutterConstants.CHANNEL_METHOD_BACK_STATUS:
-                        try {
-                            flutterBackStatus = (Boolean) methodCall.arguments;
-                        } catch (TypeCastException e) {
-                            Log.e(TAG, String.valueOf(methodCall.arguments));
-                        }
-                        result.success(methodCall.method + methodCall.arguments);
-                        break;
-                    default:
-                        result.notImplemented();
-                        break;
-                }
-            }
-        });
+        // Receive method invocations from Flutter and return results.
+        if (mMethodCallHandler != null) {
+            mFlutterChannel.setMethodCallHandler(mMethodCallHandler);
+        }
     }
 
     /**
@@ -174,30 +161,22 @@ public class FlutterWrapper {
      * be active. If no FlutterView is active, this method does nothing.
      * @param route - FlutterView page to show.
      */
-    public void showFlutterView(String route) {
+    public void showFlutterView(final String route) {
         Log.d(TAG, "showFlutterView");
         if (mFlutterView == null) {
             Log.d(TAG, "Flutter View Not Initialized");
             return;
         }
 
+        // It is up to the client to not reload the same route multiple times.
+        // Cannot check this.route != route because sometimes same route with different data could be reloaded.
+        // This function is skipped if route passed is empty to prevent duplicate initialization.
         if (!route.isEmpty()) {
-            mFlutterChannel.invokeMethod(FlutterConstants.CHANNEL_METHOD_PAGE, route, new MethodChannel.Result() {
-                @Override
-                public void success(Object result) {
-                    Log.d("Flutter Channel", String.valueOf(result));
-                }
-
-                @Override
-                public void error(String code, String message, Object details) {
-                    Log.e("Flutter Channel", String.valueOf(message));
-                }
-
-                @Override
-                public void notImplemented() {
-                    Log.e("Flutter Channel", "Not Implemented");
-                }
-            });
+            setFlutterConfig();
+            if (setFlutterData) {
+                setFlutterData(FlutterWrapper.this.flutterData);
+            }
+            setFlutterRoute(route);
         }
 
         flutterViewVisible = true;
@@ -205,37 +184,45 @@ public class FlutterWrapper {
         if (mFlutterView.getParent() != null) {
             ((ViewGroup) mFlutterView.getParent()).removeView(mFlutterView);
         }
-        mActivity.addContentView(mFlutterView, mFrameLayoutParams);
+        mActivity.addContentView(mFlutterView, getFrameLayoutParams(mActivity));
     }
 
     /**
      * Hide active FlutterView by removing view from parent.
      */
     public void hideFlutterView() {
-        flutterViewVisible = false;
-        flutterBackStatus = false;
+        resetFlutterViewState();
         //Clear FlutterView contents.
-        mFlutterChannel.invokeMethod(
-                FlutterConstants.CHANNEL_METHOD_PAGE,
-                "PAGE_BLANK", new MethodChannel.Result() {
-                    @Override
-                    public void success(Object result) {
-                        Log.d("Flutter Channel", String.valueOf(result));
-                    }
+        if (mFlutterChannel != null) {
+            mFlutterChannel.invokeMethod(
+                    FlutterConstants.CHANNEL_METHOD_PAGE,
+                    "PAGE_BLANK", new MethodChannel.Result() {
+                        @Override
+                        public void success(Object result) {
+                            Log.d("Flutter Channel", String.valueOf(result));
+                        }
 
-                    @Override
-                    public void error(String code, String message, Object details) {
-                        Log.e("Flutter Channel", String.valueOf(message));
-                    }
+                        @Override
+                        public void error(String code, String message, Object details) {
+                            Log.e("Flutter Channel", String.valueOf(message));
+                        }
 
-                    @Override
-                    public void notImplemented() {
-                        Log.e("Flutter Channel", "Not Implemented");
-                    }
-                });
-        if (mFlutterView.getParent() != null) {
-            ((ViewGroup) mFlutterView.getParent()).removeView(mFlutterView);
+                        @Override
+                        public void notImplemented() {
+                            Log.e("Flutter Channel", "Not Implemented");
+                        }
+                    });
         }
+        if (mFlutterView != null) {
+            if (mFlutterView.getParent() != null) {
+                ((ViewGroup) mFlutterView.getParent()).removeView(mFlutterView);
+            }
+        }
+        //Notify listeners that FlutterView has closed.
+        for (FlutterCloseCallback flutterCloseCallback : mFlutterCloseCallbacks) {
+            flutterCloseCallback.onClose();
+        }
+        clearFlutterCloseCallbacks();
     }
 
     /**
@@ -257,7 +244,10 @@ public class FlutterWrapper {
                 }
             });
         }
-        activity.addContentView(mLoadingView, mFrameLayoutParams);
+        if (mLoadingView.getParent() != null) {
+            ((ViewGroup) mLoadingView.getParent()).removeView(mLoadingView);
+        }
+        activity.addContentView(mLoadingView, getFrameLayoutParams(activity));
         if (mLoadingView.getVisibility() == View.GONE) {
             mLoadingView.setVisibility(View.VISIBLE);
         }
@@ -273,6 +263,77 @@ public class FlutterWrapper {
     }
 
     /**
+     * Send data to Flutter module.
+     *
+     * Immediately send data if Flutter module has been created.
+     * Otherwise, send data as soon as FlutterView is created.
+     * @param flutterData - data to pass to Flutter module as a JSON string.
+     */
+    public void setFlutterData(String flutterData) {
+        this.flutterData = flutterData;
+
+        //Do not send FlutterData if data does not exist.
+        if (flutterData != null ) {
+            if (mFlutterChannel != null) {
+                mFlutterChannel.invokeMethod(FlutterConstants.CHANNEL_METHOD_DATA, this.flutterData, new MethodChannel.Result() {
+                    @Override
+                    public void success(Object result) {
+                        Log.d("Flutter Data", String.valueOf(result));
+                        //FlutterView has received data.
+                        FlutterWrapper.this.setFlutterData = false;
+                    }
+
+                    @Override
+                    public void error(String code, String message, Object details) {
+                        Log.e("Flutter Data", String.valueOf(message));
+                    }
+
+                    @Override
+                    public void notImplemented() {
+                        Log.e("Flutter Data", "Not Implemented");
+                    }
+                });
+            }
+            //FlutterView has not been created. Set flag to pass data to FlutterView when FlutterView is eventually created.
+            else {
+                this.setFlutterData = true;
+            }
+        }
+    }
+
+    /**
+     * Update Flutter Route.
+     *
+     * Flutter Navigation update route.
+     * @param route - route to navigate to.
+     */
+    public void setFlutterRoute(String route) {
+        Log.d(TAG, "Update Flutter Route: " + route);
+        if (mFlutterChannel == null) {
+            Log.d("Set Flutter Route", "Flutter Channel Null");
+            mFlutterChannel = new MethodChannel(mFlutterView, "app");
+        }
+
+        mFlutterChannel.invokeMethod(FlutterConstants.CHANNEL_METHOD_PAGE, route, new MethodChannel.Result() {
+            @Override
+            public void success(Object result) {
+                Log.d("Flutter Channel", String.valueOf(result));
+                FlutterWrapper.this.route = route;
+            }
+
+            @Override
+            public void error(String code, String message, Object details) {
+                Log.e("Flutter Channel", String.valueOf(message));
+            }
+
+            @Override
+            public void notImplemented() {
+                Log.e("Flutter Channel", "Not Implemented");
+            }
+        });
+    }
+
+    /**
      * Pop FlutterView route.
      */
     public void popRoute() {
@@ -285,6 +346,15 @@ public class FlutterWrapper {
         }
 
         mFlutterView.popRoute();
+    }
+
+    // BEGIN: Getters and Setters.
+    public MethodChannel.MethodCallHandler getMethodCallHandler() {
+        return mMethodCallHandler;
+    }
+
+    public void setMethodCallHandler(MethodChannel.MethodCallHandler mMethodCallHandler) {
+        this.mMethodCallHandler = mMethodCallHandler;
     }
 
     /**
@@ -313,12 +383,55 @@ public class FlutterWrapper {
         this.flutterBackStatus = flutterBackStatus;
     }
 
+    public boolean isFlutterBackBlock() {
+        return flutterBackBlock;
+    }
+
+    public void setFlutterBackBlock(boolean flutterBackBlock) {
+        this.flutterBackBlock = flutterBackBlock;
+    }
+
     public boolean isFlutterViewVisible() {
         return flutterViewVisible;
     }
 
     public void setFlutterViewVisible(boolean flutterViewVisible) {
         this.flutterViewVisible = flutterViewVisible;
+    }
+
+    public String getFlutterConfig() {
+        return flutterConfig;
+    }
+
+    public void setFlutterConfig(String flutterConfig) {
+        this.flutterConfig = flutterConfig;
+        //Update Flutter module with new initialization variables.
+        setFlutterConfig();
+    }
+    // END: Getters and Setters.
+
+    /**
+     * Initialize FlutterView with host app configuration variables.
+     */
+    private void setFlutterConfig() {
+        if (!flutterConfig.isEmpty() && mFlutterChannel != null) {
+            mFlutterChannel.invokeMethod(FlutterConstants.CHANNEL_METHOD_CONFIG, flutterConfig, new MethodChannel.Result() {
+                @Override
+                public void success(Object result) {
+                    Log.d("Flutter Config", String.valueOf(result));
+                }
+
+                @Override
+                public void error(String code, String message, Object details) {
+                    Log.e("Flutter Config", String.valueOf(message));
+                }
+
+                @Override
+                public void notImplemented() {
+                    Log.e("Flutter Config", "Not Implemented");
+                }
+            });
+        }
     }
 
     /**
@@ -333,13 +446,24 @@ public class FlutterWrapper {
      * @return a {@link FlutterView}
      */
     @NonNull
-    private FlutterView createView(@NonNull final Activity activity, @NonNull final Lifecycle lifecycle, final String initialRoute, Boolean show) {
+    private FlutterView createView(@NonNull final Activity activity, @NonNull final Lifecycle lifecycle, final String initialRoute, final Boolean show) {
         FlutterMain.startInitialization(activity.getApplicationContext());
         FlutterMain.ensureInitializationComplete(activity.getApplicationContext(), null);
         final FlutterNativeView nativeView = new FlutterNativeView(activity);
         mFlutterView = new FlutterView(activity, null, nativeView) {
             private final BasicMessageChannel<String> lifecycleMessages = new BasicMessageChannel<>(this, "flutter/lifecycle", StringCodec.INSTANCE);
-            boolean showFirstTime = true;
+            boolean firstStart = true;
+
+            @Override
+            public void onFirstFrame() {
+                super.onFirstFrame();
+                setAlpha(1.0f);
+                Log.d(TAG, "onFirstFrame");
+                Log.d("Benchmark", "showFlutterView: " + (System.currentTimeMillis() - showFlutterViewStartTime));
+                showFlutterViewStartTime = 0;
+                //FlutterView is visible to the user. Hide LoadingView.
+                hideLoadingView();
+            }
 
             @Override
             public void onPostResume() {
@@ -352,26 +476,23 @@ public class FlutterWrapper {
             public void onStart() {
                 super.onStart();
                 Log.d(TAG, "onStart");
-                if (showFirstTime) {
+                if (firstStart) {
+                    firstStart = false;
                     Log.d("Benchmark", "startFlutterView: " + (System.currentTimeMillis() - startFlutterViewStartTime));
                     startFlutterViewStartTime = 0;
+                    //FlutterView has loaded, set initialization variables.
+                    setFlutterConfig();
+                    if (setFlutterData) {
+                        setFlutterData(FlutterWrapper.this.flutterData);
+                    }
+                    Log.d("Flutter Config: ", flutterConfig);
+                    Log.d("Flutter Data: ", flutterData);
+                    setFlutterRoute(initialRoute);
+                    //Called by initFlutterViewAndShow() to display FlutterView after initialization.
+                    if (show) {
+                        showFlutterView();
+                    }
                 }
-                //Called by initFlutterViewAndShow() to display FlutterView after initialization.
-                if (show && showFirstTime) {
-                    showFirstTime = false;
-                    showFlutterView();
-                }
-            }
-
-            @Override
-            public void onFirstFrame() {
-                super.onFirstFrame();
-                setAlpha(1.0f);
-                Log.d(TAG, "onFirstFrame");
-                Log.d("Benchmark", "showFlutterView: " + (System.currentTimeMillis() - showFlutterViewStartTime));
-                showFlutterViewStartTime = 0;
-                //FlutterView is visible to the user. Hide LoadingView.
-                hideLoadingView();
             }
         };
         if (initialRoute != null) {
@@ -389,30 +510,111 @@ public class FlutterWrapper {
 
             @OnLifecycleEvent(Lifecycle.Event.ON_START)
             public void onStart() {
-                mFlutterView.onStart();
+                if (mFlutterView != null) {
+                    mFlutterView.onStart();
+                }
             }
 
             @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
             public void onResume() {
-                mFlutterView.onPostResume();
+                if (mFlutterView != null) {
+                    mFlutterView.onPostResume();
+                }
             }
 
             @OnLifecycleEvent(Lifecycle.Event.ON_PAUSE)
             public void onPause() {
-                mFlutterView.onPause();
+                if (mFlutterView != null) {
+                    mFlutterView.onPause();
+                }
             }
 
             @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
             public void onStop() {
-                mFlutterView.onStop();
+                if (mFlutterView != null) {
+                    mFlutterView.onStop();
+                }
             }
 
             @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
             public void onDestroy() {
-                mFlutterView.destroy();
+                if (mFlutterView != null) {
+                    mFlutterView.destroy();
+                }
             }
         });
         mFlutterView.setAlpha(0f);
         return mFlutterView;
+    }
+
+    /**
+     * Destory FlutterView.
+     * Destroying a FlutterView is the same as hiding a FlutterView and then destroying it.
+     *
+     * @return - true if FlutterView was successfully destoryed. False if view is null and already destroyed.
+     */
+    public boolean destoryView() {
+        resetFlutterViewState();
+        if (mFlutterView != null) {
+            mFlutterView.destroy();
+            mFlutterView = null;
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Reset FlutterWrapper state variables.
+     */
+    private void resetFlutterViewState() {
+        flutterViewVisible = false;
+        flutterBackStatus = false;
+        flutterBackBlock = false;
+    }
+
+    private FrameLayout.LayoutParams getFrameLayoutParams(Activity activity) {
+        FrameLayout.LayoutParams frameLayoutParams;
+        //FrameLayoutParams used to add FlutterView and LoadingView to the view hierarchy.
+        frameLayoutParams = new FrameLayout.LayoutParams(
+                FrameLayout.LayoutParams.MATCH_PARENT,
+                FrameLayout.LayoutParams.MATCH_PARENT
+        );
+
+        //Set top margin status bar and safe area.
+        int topMargin = getStatusBarHeight();
+        //If device has display insets, set top margin to display inset instead of status bar height.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && activity.getWindow() != null) {
+            WindowInsets windowInsets = activity.getWindow().getDecorView().getRootWindowInsets();
+            if (windowInsets != null && windowInsets.getDisplayCutout() != null) {
+                topMargin = windowInsets.getDisplayCutout().getSafeInsetTop();
+            }
+        }
+//        frameLayoutParams.topMargin = topMargin;
+
+        return frameLayoutParams;
+    }
+
+    /**
+     * Converts dp to pixels.
+     */
+    private int getStatusBarHeight() {
+        return (int) (24 * Resources.getSystem().getDisplayMetrics().density);
+    }
+
+    /**
+     * Add FlutterCloseCallback listener to be called when FlutterView is closed.
+     *
+     * @param flutterCloseCallback - callback to add.
+     */
+    public void addFlutterCloseCallback(FlutterCloseCallback flutterCloseCallback) {
+        mFlutterCloseCallbacks.add(flutterCloseCallback);
+    }
+
+    /**
+     * Clear close callback list.
+     */
+    public void clearFlutterCloseCallbacks() {
+        mFlutterCloseCallbacks.clear();
     }
 }

@@ -6,6 +6,14 @@ import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlin.TypeCastException
+import io.flutter.plugin.common.MethodChannel
+import io.flutter.plugin.common.MethodCall
+import androidx.core.app.ComponentActivity.ExtraData
+import androidx.core.content.ContextCompat.getSystemService
+import android.icu.lang.UCharacter.GraphemeClusterBreak.T
+
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -22,6 +30,29 @@ class MainActivity : AppCompatActivity() {
         mFlutterWrapper = FlutterWrapper()
 //        mFlutterWrapper.preInitializeFlutter(this)
         mFlutterWrapper.initFlutterView(this@MainActivity, lifecycle, "PAGE_MAIN")
+        mFlutterWrapper.methodCallHandler = MethodChannel.MethodCallHandler { methodCall, result ->
+            println("Method Call");
+            when (methodCall.method) {
+                FlutterConstants.CHANNEL_METHOD_NAVIGATION -> {
+                    println("CHANNEL_METHOD_NAVIGATION");
+                    when (methodCall.arguments as String) {
+                        FlutterConstants.NAVIGATION_CLOSE -> mFlutterWrapper.hideFlutterView()
+                    }
+                    result.success(methodCall.method + methodCall.arguments)
+                }
+                FlutterConstants.CHANNEL_METHOD_BACK_STATUS -> {
+                    println("CHANNEL_METHOD_BACK_STATUS")
+                    try {
+                        mFlutterWrapper.flutterBackStatus = methodCall.arguments as Boolean
+                    } catch (e: TypeCastException) {
+                        Log.e(TAG, methodCall.arguments.toString())
+                    }
+
+                    result.success(methodCall.method + methodCall.arguments)
+                }
+                else -> result.notImplemented()
+            }
+        }
 
         button_1.setOnClickListener {
             mFlutterWrapper.initFlutterViewAndShow(this@MainActivity, lifecycle, "PAGE_MAIN")
