@@ -83,4 +83,4 @@ flutter:
   module:
     androidX: true
     androidPackage: com.flutter.flutter_module
-    iosBundleIdentifier: com.flutter.myFlutter
+    iosBundleIdentifier: com.flutter.flutterModule
