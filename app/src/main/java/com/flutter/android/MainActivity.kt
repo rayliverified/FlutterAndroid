@@ -6,72 +6,55 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
-import androidx.fragment.app.FragmentManager
-import io.flutter.embedding.android.FlutterFragment
-import io.flutter.embedding.android.FlutterView
-import io.flutter.embedding.engine.FlutterEngine
-import io.flutter.embedding.engine.FlutterEngineCache
-import io.flutter.embedding.engine.dart.DartExecutor.DartEntrypoint
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.android.synthetic.main.activity_main.*
+import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity() {
 
     var TAG = MainActivity::class.java.name
 
-    lateinit var mFlutterEngine: FlutterEngine;
-    lateinit var mFlutterWrapper: FlutterWrapper
-    lateinit var mFlutterView: FlutterView;
-    lateinit var mFlutterChannel: MethodChannel;
-    lateinit var mMethodCallHandler: MethodChannel.MethodCallHandler;
-    var mFlutterConfig: FlutterConfig = FlutterConfig()
-    lateinit var mFragmentManager: FragmentManager
-    var mFlutterFragment: FlutterFragment? = null
-    val FLUTTER_FRAGMENT = "FLUTTER_FRAGMENT"
-
+    lateinit var mFlutterWrapper: FlutterWrapperV2
     lateinit var context: Context;
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        mFlutterWrapper = FlutterWrapperV2().init(this@MainActivity)
+        setFlutterConfig()
+        mFlutterWrapper.methodCallHandler = MethodChannel.MethodCallHandler { methodCall, result ->
+            when (methodCall.method) {
+                FlutterConstants.CHANNEL_METHOD_NAVIGATION -> {
+                    val jsonObject = JSONObject(methodCall.arguments as String)
+                    if (jsonObject.has("navigation")) {
+                        when (jsonObject.get("navigation")) {
+                            FlutterConstants.NAVIGATION_CLOSE -> {
+                                mFlutterWrapper.hideFlutter()
+                            }
+                        }
+                    }
+                    result.success(methodCall.method + methodCall.arguments)
+                }
+                FlutterConstants.CHANNEL_METHOD_EVENTS -> {
+                    val jsonObject = JSONObject(methodCall.arguments as String)
+                    if (jsonObject.has("event")) {
+                        when (jsonObject.getString("event")) {
+                            else -> {
+                            }
+                        }
+                    }
+                }
+                else -> result.notImplemented()
+            }
+        }
         Log.d(TAG, "onCreate")
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setSupportActionBar(toolbar)
 
-        context = this.application.applicationContext;
-
-        //Create Flutter Engine.
-        mFlutterEngine = FlutterEngine(context)
-        mFlutterEngine
-            .dartExecutor
-            .executeDartEntrypoint(
-                DartEntrypoint.createDefault()
-            )
-        //Add FlutterEngine to cache.
-        FlutterEngineCache
-            .getInstance()
-            .put("FLUTTER_ENGINE", mFlutterEngine)
-        //Create Flutter Method Channel.
-        mFlutterChannel = MethodChannel(mFlutterEngine.dartExecutor, "app")
-        //Create Flutter Fragment
-        mFragmentManager = supportFragmentManager
-        mFlutterFragment = mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) as FlutterFragment?
-        if (mFlutterFragment == null) {
-            mFlutterFragment = FlutterFragment.withCachedEngine("FLUTTER_ENGINE").build()
-        }
+        context = this.application.applicationContext
 
         button_1.setOnClickListener {
-
-            mFragmentManager
-                .beginTransaction()
-                .add(R.id.fragment_container, mFlutterFragment as Fragment, FLUTTER_FRAGMENT)
-                .commit();
-
-        }
-
-        fab.setOnClickListener { view ->
-
+            mFlutterWrapper.setFlutterData("{\"post_id\": \"9112\"}")
+            mFlutterWrapper.showFlutter(FlutterConstants.PAGE_POST_THREAD)
         }
     }
 
@@ -88,12 +71,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) != null) {
-            mFragmentManager.beginTransaction().remove(mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT)!!).commit()
+        if (mFlutterWrapper.isFlutterVisible) {
+            mFlutterWrapper.sendBackEvent()
             return
         }
 
         super.onBackPressed()
+    }
+
+    private fun setFlutterConfig() {
+        mFlutterWrapper.flutterConfig = "{\"flavor\": \"QA\", \"accessToken\": \"4247058463afbef1c1e1d0f52a4f5f51004f94ee7941cdd73c3cb6465600798a\"}"
     }
 
     /**
@@ -204,5 +191,47 @@ class MainActivity : AppCompatActivity() {
 //        mFlutterFragment = mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) as FlutterFragment?
 //        if (mFlutterFragment == null) {
 //            mFlutterFragment = FlutterFragment.withCachedEngine("FLUTTER_ENGINE").build()
+//        }
+
+    /*
+     * Flutter Embedding v2 Fragment
+     */
+ //    lateinit var mFlutterEngine: FlutterEngine;
+//    lateinit var mFlutterWrapper: FlutterWrapper
+//    lateinit var mFlutterView: FlutterView;
+//    lateinit var mFlutterChannel: MethodChannel;
+//    lateinit var mMethodCallHandler: MethodChannel.MethodCallHandler;
+//    var mFlutterConfig: FlutterConfig = FlutterConfig()
+//    lateinit var mFragmentManager: FragmentManager
+//    var mFlutterFragment: FlutterFragment? = null
+//    val FLUTTER_FRAGMENT = "FLUTTER_FRAGMENT"
+//        //Create Flutter Engine.
+//        mFlutterEngine = FlutterEngine(context)
+//        mFlutterEngine
+//            .dartExecutor
+//            .executeDartEntrypoint(
+//                DartEntrypoint.createDefault()
+//            )
+//        //Add FlutterEngine to cache.
+//        FlutterEngineCache
+//            .getInstance()
+//            .put("FLUTTER_ENGINE", mFlutterEngine)
+//        //Create Flutter Method Channel.
+//        mFlutterChannel = MethodChannel(mFlutterEngine.dartExecutor, "app")
+//        //Create Flutter Fragment
+//        mFragmentManager = supportFragmentManager
+//        mFlutterFragment = mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) as FlutterFragment?
+//        if (mFlutterFragment == null) {
+//            mFlutterFragment = FlutterFragment.createDefault()
+//        }
+//          //Open Flutter Fragment.
+//            mFragmentManager
+//                .beginTransaction()
+//                .add(R.id.fragment_container, mFlutterFragment as Fragment, FLUTTER_FRAGMENT)
+//                .commit();
+//         //Close Flutter Fragment
+//        if (mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) != null) {
+//            mFragmentManager.beginTransaction().remove(mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT)!!).commit()
+//            return
 //        }
 }
