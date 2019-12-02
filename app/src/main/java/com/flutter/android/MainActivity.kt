@@ -6,6 +6,13 @@ import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
+import androidx.fragment.app.FragmentManager
+import io.flutter.embedding.android.FlutterFragment
+import io.flutter.embedding.android.FlutterView
+import io.flutter.embedding.engine.FlutterEngine
+import io.flutter.embedding.engine.FlutterEngineCache
+import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
@@ -15,20 +22,53 @@ class MainActivity : AppCompatActivity() {
 
     var TAG = MainActivity::class.java.name
 
-    lateinit var mFlutterWrapper: FlutterWrapperV2
+    lateinit var mFlutterEngine: FlutterEngine;
+    lateinit var mFlutterView: FlutterView;
+    lateinit var mFlutterChannel: MethodChannel;
+    lateinit var mMethodCallHandler: MethodChannel.MethodCallHandler;
+    var mFlutterConfig: FlutterConfig = FlutterConfig()
+    lateinit var mFragmentManager: FragmentManager
+    var mFlutterFragment: FlutterFragment? = null
+    val FLUTTER_FRAGMENT = "FLUTTER_FRAGMENT"
     lateinit var context: Context;
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        mFlutterWrapper = FlutterWrapperV2().init(this@MainActivity)
-        setFlutterConfig()
-        mFlutterWrapper.methodCallHandler = MethodChannel.MethodCallHandler { methodCall, result ->
+        Log.d(TAG, "onCreate")
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        context = this.application.applicationContext
+
+        //Create Flutter Engine.
+        mFlutterEngine = FlutterEngine(context)
+        mFlutterEngine
+            .dartExecutor
+            .executeDartEntrypoint(
+                DartExecutor.DartEntrypoint.createDefault()
+            )
+        //Add FlutterEngine to cache.
+        FlutterEngineCache
+            .getInstance()
+            .put("FLUTTER_ENGINE", mFlutterEngine)
+        //Create Flutter Method Channel.
+        mFlutterChannel = MethodChannel(mFlutterEngine.dartExecutor, "app")
+        //Create Flutter Fragment
+        mFragmentManager = supportFragmentManager
+        mFlutterFragment = mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) as FlutterFragment?
+        if (mFlutterFragment == null) {
+            mFlutterFragment =
+                FlutterFragment.withCachedEngine("FLUTTER_ENGINE").transparencyMode(FlutterView.TransparencyMode.transparent).build()
+        }
+        mMethodCallHandler = MethodChannel.MethodCallHandler { methodCall, result ->
             when (methodCall.method) {
                 FlutterConstants.CHANNEL_METHOD_NAVIGATION -> {
                     val jsonObject = JSONObject(methodCall.arguments as String)
                     if (jsonObject.has("navigation")) {
                         when (jsonObject.get("navigation")) {
                             FlutterConstants.NAVIGATION_CLOSE -> {
-                                mFlutterWrapper.hideFlutter()
+                                if (mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) != null) {
+                                    mFragmentManager.beginTransaction().remove(mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT)!!).commit()
+                                }
                             }
                         }
                     }
@@ -46,15 +86,74 @@ class MainActivity : AppCompatActivity() {
                 else -> result.notImplemented()
             }
         }
-        Log.d(TAG, "onCreate")
-        super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
-
-        context = this.application.applicationContext
+        mFlutterChannel.setMethodCallHandler(mMethodCallHandler)
 
         button_1.setOnClickListener {
-            mFlutterWrapper.setFlutterData("{\"post_id\": \"9112\"}")
-            mFlutterWrapper.showFlutter(FlutterConstants.PAGE_POST_THREAD)
+            mFlutterChannel.invokeMethod(
+                FlutterConstants.CHANNEL_METHOD_CONFIG,
+                "{\"flavor\": \"QA\", \"accessToken\": \"4247058463afbef1c1e1d0f52a4f5f51004f94ee7941cdd73c3cb6465600798a\"}",
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        Log.d("setFlutterConfig", result.toString())
+                    }
+
+                    override fun error(
+                        code: String,
+                        message: String?,
+                        details: Any?
+                    ) {
+                        Log.e("setFlutterConfig", message.toString())
+                    }
+
+                    override fun notImplemented() {
+                        Log.e("setFlutterConfig", "Not Implemented")
+                    }
+                })
+            mFlutterChannel.invokeMethod(
+                FlutterConstants.CHANNEL_METHOD_DATA,
+                "{\"post_id\": \"9112\"}",
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        Log.d("setFlutterData", result.toString())
+                    }
+
+                    override fun error(
+                        code: String,
+                        message: String?,
+                        details: Any?
+                    ) {
+                        Log.e("setFlutterData", message.toString())
+                    }
+
+                    override fun notImplemented() {
+                        Log.e("setFlutterData", "Not Implemented")
+                    }
+                })
+            mFlutterChannel.invokeMethod(
+                FlutterConstants.CHANNEL_METHOD_PAGE,
+                "PAGE_POST_THREAD",
+                object : MethodChannel.Result {
+                    override fun success(result: Any?) {
+                        Log.d("Flutter Channel", result.toString())
+                    }
+
+                    override fun error(
+                        code: String,
+                        message: String?,
+                        details: Any?
+                    ) {
+                        Log.e("Flutter Channel", message.toString())
+                    }
+
+                    override fun notImplemented() {
+                        Log.e("Flutter Route", "Not Implemented")
+                    }
+                })
+            //Open Flutter Fragment.
+            mFragmentManager
+                .beginTransaction()
+                .add(R.id.fragment_container, mFlutterFragment as Fragment, FLUTTER_FRAGMENT)
+                .commit();
         }
     }
 
@@ -71,16 +170,12 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onBackPressed() {
-        if (mFlutterWrapper.isFlutterVisible) {
-            mFlutterWrapper.sendBackEvent()
+        //Close Flutter Fragment
+        if (mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT) != null) {
+            mFragmentManager.beginTransaction().remove(mFragmentManager.findFragmentByTag(FLUTTER_FRAGMENT)!!).commit()
             return
         }
-
         super.onBackPressed()
-    }
-
-    private fun setFlutterConfig() {
-        mFlutterWrapper.flutterConfig = "{\"flavor\": \"QA\", \"accessToken\": \"4247058463afbef1c1e1d0f52a4f5f51004f94ee7941cdd73c3cb6465600798a\"}"
     }
 
     /**
@@ -171,6 +266,45 @@ class MainActivity : AppCompatActivity() {
 //    }
 
     /*
+     * Flutter Wrapper v2
+     */
+//        mFlutterWrapper = FlutterWrapperV2().init(this@MainActivity)
+//        setFlutterConfig()
+//        mFlutterWrapper.methodCallHandler = MethodChannel.MethodCallHandler { methodCall, result ->
+//            when (methodCall.method) {
+//                FlutterConstants.CHANNEL_METHOD_NAVIGATION -> {
+//                    val jsonObject = JSONObject(methodCall.arguments as String)
+//                    if (jsonObject.has("navigation")) {
+//                        when (jsonObject.get("navigation")) {
+//                            FlutterConstants.NAVIGATION_CLOSE -> {
+//                                mFlutterWrapper.hideFlutter()
+//                            }
+//                        }
+//                    }
+//                    result.success(methodCall.method + methodCall.arguments)
+//                }
+//                FlutterConstants.CHANNEL_METHOD_EVENTS -> {
+//                    val jsonObject = JSONObject(methodCall.arguments as String)
+//                    if (jsonObject.has("event")) {
+//                        when (jsonObject.getString("event")) {
+//                            else -> {
+//                            }
+//                        }
+//                    }
+//                }
+//                else -> result.notImplemented()
+//            }
+//        }
+//    private fun setFlutterConfig() {
+//        mFlutterWrapper.flutterConfig = "{\"flavor\": \"QA\", \"accessToken\": \"4247058463afbef1c1e1d0f52a4f5f51004f94ee7941cdd73c3cb6465600798a\"}"
+//    }
+//        if (mFlutterWrapper.isFlutterVisible) {
+//            mFlutterWrapper.sendBackEvent()
+//            return
+//        }
+//            mFlutterWrapper.setFlutterData("{\"post_id\": \"9112\"}")
+//            mFlutterWrapper.showFlutter(FlutterConstants.PAGE_POST_THREAD)
+    /*
      * Flutter Embedding v2
      */
 //        //Create Flutter Engine.
@@ -196,7 +330,7 @@ class MainActivity : AppCompatActivity() {
     /*
      * Flutter Embedding v2 Fragment
      */
- //    lateinit var mFlutterEngine: FlutterEngine;
+    //    lateinit var mFlutterEngine: FlutterEngine;
 //    lateinit var mFlutterWrapper: FlutterWrapper
 //    lateinit var mFlutterView: FlutterView;
 //    lateinit var mFlutterChannel: MethodChannel;
