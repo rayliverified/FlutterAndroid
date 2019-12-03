@@ -33,6 +33,12 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Scaffold(
           body: Stack(
         children: <Widget>[
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              GroupLoadedPage(),
+            ],
+          ),
           Align(
             alignment: Alignment.bottomCenter,
             child: ReplyBox(),
@@ -43,17 +49,58 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
+class GroupLoadedPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final groupChatBloc = BlocProvider.of<GroupChatBloc>(context);
+
+    return Expanded(
+      child: ListView.builder(
+          itemBuilder: (BuildContext context, int index) {
+            return Container(
+              height: 50,
+              margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Color.fromARGB(255, 255, 255, 255),
+                boxShadow: [
+                  BoxShadow(
+                    color: Color.fromARGB(128, 218, 218, 218),
+                    blurRadius: 5,
+                  ),
+                ],
+                border: Border.all(
+                    color: Color(0xAE212121),
+                    width: 1,
+                    style: BorderStyle.solid),
+                borderRadius: BorderRadius.all(Radius.circular(6)),
+              ),
+              child: Text(groupChatBloc.groupChats[index]),
+            );
+          },
+          controller: groupChatBloc.groupChatController,
+          itemCount: groupChatBloc.groupChats.length),
+    );
+  }
+}
+
 class GroupChatBloc extends Bloc<GroupChatEvent, GroupChatState> {
+  ScrollController groupChatController;
   FocusNode replyTextFocus = FocusNode();
   TextEditingController replyTextController;
+  List<String> groupChats = [];
 
   GroupChatBloc(BuildContext context) {
+    groupChatController = ScrollController();
     replyTextController = TextEditingController();
+    for (int i = 0; i < 100; i++) {
+      groupChats.add("Group Message #$i");
+    }
     showKeyboard();
   }
 
   @override
   Future<void> close() {
+    groupChatController.dispose();
     replyTextFocus.dispose();
     replyTextController.dispose();
     return super.close();

@@ -9,14 +9,6 @@ androidExtensions {
 }
 
 android {
-    signingConfigs {
-        NOCD {
-            storeFile file('C:\\Users\\Laptop\\OneDrive\\Transfer\\nocd_keystore.jks')
-            storePassword 'nocd12312'
-            keyAlias = 'nocd_keystore'
-            keyPassword 'nocd12312'
-        }
-    }
     compileSdkVersion 28
     defaultConfig {
         applicationId "com.flutter.android"
@@ -25,7 +17,6 @@ android {
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
-        signingConfig signingConfigs.NOCD
     }
     buildTypes {
         release {
