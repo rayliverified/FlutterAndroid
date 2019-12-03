@@ -15,7 +15,6 @@ import io.flutter.embedding.engine.FlutterEngineCache
 import io.flutter.embedding.engine.dart.DartExecutor
 import io.flutter.plugin.common.MethodChannel
 import kotlinx.android.synthetic.main.activity_main.*
-import org.json.JSONObject
 
 
 class MainActivity : AppCompatActivity() {
@@ -23,10 +22,7 @@ class MainActivity : AppCompatActivity() {
     var TAG = MainActivity::class.java.name
 
     lateinit var mFlutterEngine: FlutterEngine;
-    lateinit var mFlutterView: FlutterView;
     lateinit var mFlutterChannel: MethodChannel;
-    lateinit var mMethodCallHandler: MethodChannel.MethodCallHandler;
-    var mFlutterConfig: FlutterConfig = FlutterConfig()
     lateinit var mFragmentManager: FragmentManager
     var mFlutterFragment: FlutterFragment? = null
     val FLUTTER_FRAGMENT = "FLUTTER_FRAGMENT"
